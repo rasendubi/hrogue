@@ -1,0 +1,69 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: b5557aeb70992558a923b509ca1281c131cc8e602cc2a63f535955fb15bfad36
+
+name:           hrogue
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/rasendubi/hrogue#readme>
+homepage:       https://github.com/rasendubi/hrogue#readme
+bug-reports:    https://github.com/rasendubi/hrogue/issues
+author:         Alexey Shmalko
+maintainer:     rasen.dubi@gmail.com
+copyright:      2020 Alexey Shmalko
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/rasendubi/hrogue
+
+library
+  exposed-modules:
+      Hrogue
+      Hrogue.Terminal
+  other-modules:
+      Paths_hrogue
+  hs-source-dirs:
+      src
+  build-depends:
+      ansi-terminal
+    , base >=4.7 && <5
+    , mtl
+  default-language: Haskell2010
+
+executable hrogue-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_hrogue
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      ansi-terminal
+    , base >=4.7 && <5
+    , hrogue
+    , mtl
+  default-language: Haskell2010
+
+test-suite hrogue-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_hrogue
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      ansi-terminal
+    , base >=4.7 && <5
+    , hrogue
+    , mtl
+  default-language: Haskell2010
