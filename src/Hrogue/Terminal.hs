@@ -4,6 +4,7 @@ module Hrogue.Terminal
   , withTerminal
   , putSymbol
   , getKey
+  , goto
   ) where
 
 import Control.Exception (finally)
@@ -36,16 +37,20 @@ restoreTerminal = do
 withTerminal :: IO () -> IO ()
 withTerminal f = finally (prepareTerminal >> f) restoreTerminal
 
-putSymbol :: Point -> Char -> IO ()
-putSymbol Point{ pointX=x, pointY=y } c = do
+goto :: Point -> IO ()
+goto Point{ pointX=x, pointY=y } = do
   ANSI.setCursorPosition y x
+
+putSymbol :: Point -> Char -> IO ()
+putSymbol p c = do
+  goto p
   putChar c
 
 -- | Read key press from the stdin.
 --
 -- This might return more than one character in case of
 -- escape-sequences.
-getKey :: IO [Char]
+getKey :: IO String
 getKey = reverse <$> getKey' []
   where
     getKey' chars = do

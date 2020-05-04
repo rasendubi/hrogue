@@ -1,20 +1,28 @@
 module Hrogue (run) where
 
-import Control.Monad (void, unless)
-import Control.Monad.State.Lazy (StateT(..), get, gets, put, modify')
-import Control.Monad.IO.Class (liftIO)
+import           Control.Monad              (unless, void)
+import           Control.Monad.IO.Class     (liftIO)
+import           Control.Monad.State.Strict (StateT (..), get, gets, modify',
+                                             put)
+import           Data.Text.IO               as T
 
-import Hrogue.Terminal (Point(Point), withTerminal, putSymbol, getKey, clearScreen)
+import           Hrogue.Data.Level          (TerrainMap, parseMap,
+                                             terrainMapToString)
+import           Hrogue.Terminal            (Point (Point), clearScreen, getKey,
+                                             goto, putSymbol, withTerminal)
 
 data HrogueState = HrogueState
-  { hrougeStatePlayer :: !Point
-  } deriving (Show)
+    { hrougeStatePlayer :: !Point
+    , terrainMap        :: !TerrainMap
+    }
+    deriving (Show)
 
 type HrogueM = StateT HrogueState IO
 
 run :: IO ()
 run = withTerminal $ do
-  let initialState = HrogueState (Point 0 0)
+  level <- parseMap <$> T.readFile "data/level.txt"
+  let initialState = HrogueState (Point 0 0) level
   void $ runStateT game initialState
 
 game :: HrogueM ()
@@ -26,11 +34,15 @@ game = do
 
 redraw :: HrogueM ()
 redraw = do
-  liftIO $ clearScreen
+  level <- gets terrainMap
   player <- gets hrougeStatePlayer
-  liftIO $ putSymbol player '@'
+  liftIO $ do
+    clearScreen
+    goto (Point 0 0)
+    T.putStr (terrainMapToString level)
+    putSymbol player '@'
 
-processKey :: [Char] -> HrogueM ()
+processKey :: String -> HrogueM ()
 processKey k =
   case k of
     "\ESC[A" -> movePlayer up
