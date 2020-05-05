@@ -1,4 +1,12 @@
-module Hrogue.Data.Level (TerrainMap, terrainMapStartPosition, TerrainCell(..), parseMap, terrainMapToString) where
+module Hrogue.Data.Level
+  ( TerrainMap
+  , terrainMapCell
+  , terrainMapStartPosition
+  , TerrainCell(..)
+  , parseMap
+  , terrainMapToString
+  , isWalkable
+  ) where
 
 import           Data.Text       (Text)
 import qualified Data.Text       as T
@@ -19,6 +27,9 @@ data TerrainMap = TerrainMap
     }
     deriving (Show)
 
+terrainMapCell :: TerrainMap -> Point -> TerrainCell
+terrainMapCell m (Point x y) = (V.! x) . (V.! y) . unTerrainMap $ m
+
 parseMap :: Text -> TerrainMap
 parseMap t =
   let
@@ -26,6 +37,11 @@ parseMap t =
     [sizeX, sizeY, startX, startY] = map (read . T.unpack) . T.words $ headerLine
     terrain = V.fromList . map (V.fromList . map charToTerrainCell . T.unpack) $ mapLines
   in TerrainMap terrain (sizeX, sizeY) (Point startX startY)
+
+isWalkable :: TerrainCell -> Bool
+isWalkable Floor    = True
+isWalkable Corridor = True
+isWalkable _        = False
 
 charToTerrainCell :: Char -> TerrainCell
 charToTerrainCell '.' = Floor

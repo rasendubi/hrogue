@@ -1,12 +1,14 @@
 module Hrogue (run) where
 
-import           Control.Monad              (unless, void)
+import           Control.Monad              (unless, void, when)
 import           Control.Monad.IO.Class     (liftIO)
 import           Control.Monad.State.Strict (StateT (..), get, gets, modify',
                                              put)
+
 import           Data.Text.IO               as T
 
-import           Hrogue.Data.Level          (TerrainMap, parseMap,
+import           Hrogue.Data.Level          (TerrainMap, isWalkable, parseMap,
+                                             terrainMapCell,
                                              terrainMapStartPosition,
                                              terrainMapToString)
 import           Hrogue.Terminal            (Point (Point), clearScreen, getKey,
@@ -14,8 +16,8 @@ import           Hrogue.Terminal            (Point (Point), clearScreen, getKey,
                                              withTerminal)
 
 data HrogueState = HrogueState
-    { hrougeStatePlayer :: !Point
-    , terrainMap        :: !TerrainMap
+    { hrougeStatePlayer     :: !Point
+    , hrougeStateTerrainMap :: !TerrainMap
     }
     deriving (Show)
 
@@ -36,7 +38,7 @@ game = do
 
 redraw :: HrogueM ()
 redraw = do
-  level <- gets terrainMap
+  level <- gets hrougeStateTerrainMap
   player <- gets hrougeStatePlayer
   liftIO $ do
     clearScreen
@@ -62,9 +64,11 @@ processKey k =
     _        -> return ()
 
 movePlayer :: Point -> HrogueM ()
-movePlayer (Point diffX diffY) = modify' $ \state ->
-  let (Point playerX playerY) = hrougeStatePlayer state
-  in state{ hrougeStatePlayer = Point (playerX + diffX) (playerY + diffY) }
+movePlayer pdiff = do
+  next <- pointPlus pdiff <$> gets hrougeStatePlayer
+  cell <- flip terrainMapCell next <$> gets hrougeStateTerrainMap
+  when (isWalkable cell) $
+    modify' $ \state -> state{ hrougeStatePlayer = next }
 
 left, right, up, down :: Point
 left  = Point (-1) 0
