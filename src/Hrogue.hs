@@ -9,7 +9,8 @@ import           Data.Text.IO               as T
 import           Hrogue.Data.Level          (TerrainMap, parseMap,
                                              terrainMapToString)
 import           Hrogue.Terminal            (Point (Point), clearScreen, getKey,
-                                             goto, putSymbol, withTerminal)
+                                             goto, pointPlus, putSymbol,
+                                             withTerminal)
 
 data HrogueState = HrogueState
     { hrougeStatePlayer :: !Point
@@ -53,6 +54,10 @@ processKey k =
     "o"      -> movePlayer right
     "\ESC[D" -> movePlayer left
     "y"      -> movePlayer left
+    "j"      -> movePlayer (up   `pointPlus` left)
+    "f"      -> movePlayer (up   `pointPlus` right)
+    "v"      -> movePlayer (down `pointPlus` left)
+    "k"      -> movePlayer (down `pointPlus` right)
     _        -> return ()
 
 movePlayer :: Point -> HrogueM ()
