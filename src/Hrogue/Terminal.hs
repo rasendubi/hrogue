@@ -42,7 +42,7 @@ withTerminal :: IO () -> IO ()
 withTerminal f = finally (prepareTerminal >> f) restoreTerminal
 
 goto :: Point -> IO ()
-goto Point{ pointX=x, pointY=y } = do
+goto (Point x y) = do
   ANSI.setCursorPosition y x
 
 putSymbol :: Point -> Char -> IO ()

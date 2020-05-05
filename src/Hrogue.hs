@@ -7,6 +7,7 @@ import           Control.Monad.State.Strict (StateT (..), get, gets, modify',
 import           Data.Text.IO               as T
 
 import           Hrogue.Data.Level          (TerrainMap, parseMap,
+                                             terrainMapStartPosition,
                                              terrainMapToString)
 import           Hrogue.Terminal            (Point (Point), clearScreen, getKey,
                                              goto, pointPlus, putSymbol,
@@ -23,7 +24,7 @@ type HrogueM = StateT HrogueState IO
 run :: IO ()
 run = withTerminal $ do
   level <- parseMap <$> T.readFile "data/level.txt"
-  let initialState = HrogueState (Point 0 0) level
+  let initialState = HrogueState (terrainMapStartPosition level) level
   void $ runStateT game initialState
 
 game :: HrogueM ()
