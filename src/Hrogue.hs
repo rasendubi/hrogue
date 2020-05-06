@@ -7,17 +7,21 @@ import           Control.Monad.State.Strict (StateT (..), get, gets, modify',
 
 import           Data.Text.IO               as T
 
+import qualified System.Console.ANSI        as ANSI
+import qualified System.Console.ANSI.Types  as ANSI
+
 import           Hrogue.Data.Level          (TerrainMap, isWalkable, parseMap,
                                              terrainMapCell,
                                              terrainMapStartPosition,
                                              terrainMapToString)
-import           Hrogue.Terminal            (Point (Point), clearScreen, getKey,
-                                             goto, pointPlus, putSymbol,
-                                             withTerminal)
+import           Hrogue.Data.Point          (Point (Point), pointPlus)
+import           Hrogue.Terminal            (clearScreen, getKey, goto,
+                                             putSymbol, withTerminal)
 
 data HrogueState = HrogueState
     { hrougeStatePlayer     :: !Point
     , hrougeStateTerrainMap :: !TerrainMap
+    , hrougeStateSnake      :: !Point
     }
     deriving (Show)
 
@@ -26,7 +30,9 @@ type HrogueM = StateT HrogueState IO
 run :: IO ()
 run = withTerminal $ do
   level <- parseMap <$> T.readFile "data/level.txt"
-  let initialState = HrogueState (terrainMapStartPosition level) level
+  let player = terrainMapStartPosition level
+  let snake = Point 77 9
+  let initialState = HrogueState player level snake
   void $ runStateT game initialState
 
 game :: HrogueM ()
@@ -40,11 +46,24 @@ redraw :: HrogueM ()
 redraw = do
   level <- gets hrougeStateTerrainMap
   player <- gets hrougeStatePlayer
+  snake <- gets hrougeStateSnake
   liftIO $ do
     clearScreen
     goto (Point 0 0)
+    ANSI.setSGR []
     T.putStr (terrainMapToString level)
-    putSymbol player '@'
+    putSymbol
+      player
+      [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
+      , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
+      ]
+      '@'
+    putSymbol
+      snake
+      [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
+      , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
+      ]
+      's'
 
 processKey :: String -> HrogueM ()
 processKey k =

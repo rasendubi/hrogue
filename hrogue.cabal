@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2924ee4a8a02e52439577576ad642b2af9bcd674ab25449c7b67aff0ea88053c
+-- hash: 0bb24c5c06c9ad62a3f4f8384d7a360af23182d10fd8c3a4acdcb9842bc00a55
 
 name:           hrogue
 version:        0.1.0.0
@@ -29,6 +29,7 @@ library
   exposed-modules:
       Hrogue
       Hrogue.Data.Level
+      Hrogue.Data.Point
       Hrogue.Terminal
   other-modules:
       Paths_hrogue

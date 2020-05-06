@@ -1,25 +1,18 @@
 module Hrogue.Terminal
-  ( Point(..)
-  , pointPlus
-  , clearScreen
+  ( clearScreen
   , withTerminal
   , putSymbol
   , getKey
   , goto
   ) where
 
-import Control.Exception (finally)
-import System.IO (stdin, stdout, hSetBuffering, BufferMode(NoBuffering), hSetEcho, hReady)
+import           Control.Exception   (finally)
+import           System.IO           (BufferMode (NoBuffering), hReady,
+                                      hSetBuffering, hSetEcho, stdin, stdout)
 
 import qualified System.Console.ANSI as ANSI
 
-data Point = Point
-  { pointX :: !Int
-  , pointY :: !Int
-  } deriving (Eq, Show)
-
-pointPlus :: Point -> Point -> Point
-pointPlus (Point x1 y1) (Point x2 y2) = Point (x1 + x2) (y1 + y2)
+import           Hrogue.Data.Point   (Point (Point))
 
 clearScreen :: IO ()
 clearScreen = ANSI.clearScreen
@@ -42,12 +35,12 @@ withTerminal :: IO () -> IO ()
 withTerminal f = finally (prepareTerminal >> f) restoreTerminal
 
 goto :: Point -> IO ()
-goto (Point x y) = do
-  ANSI.setCursorPosition y x
+goto (Point x y) = ANSI.setCursorPosition y x
 
-putSymbol :: Point -> Char -> IO ()
-putSymbol p c = do
+putSymbol :: Point -> [ANSI.SGR] -> Char -> IO ()
+putSymbol p sgr c = do
   goto p
+  ANSI.setSGR sgr
   putChar c
 
 -- | Read key press from the stdin.

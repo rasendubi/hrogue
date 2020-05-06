@@ -8,12 +8,12 @@ module Hrogue.Data.Level
   , isWalkable
   ) where
 
-import           Data.Text       (Text)
-import qualified Data.Text       as T
-import           Data.Vector     (Vector)
-import qualified Data.Vector     as V
+import           Data.Text         (Text)
+import qualified Data.Text         as T
+import           Data.Vector       (Vector)
+import qualified Data.Vector       as V
 
-import           Hrogue.Terminal (Point (Point))
+import           Hrogue.Data.Point (Point (Point))
 
 data TerrainCell = Floor
     | Corridor
