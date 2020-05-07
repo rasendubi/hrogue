@@ -106,8 +106,6 @@ redraw = do
   level <- gets hrogueStateTerrainMap
   actors <- gets hrogueStateActors
   liftIO $ do
-    clearScreen
-
     goto (Point 0 0)
     ANSI.setSGR []
     T.putStr (terrainMapToString level)
