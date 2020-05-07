@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0bb24c5c06c9ad62a3f4f8384d7a360af23182d10fd8c3a4acdcb9842bc00a55
+-- hash: fcabeb04a2036949f45d13673669376dd8164a48a3d95d27fc02fc791013010b
 
 name:           hrogue
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Hrogue
+      Hrogue.Data.Actor
       Hrogue.Data.Level
       Hrogue.Data.Point
       Hrogue.Terminal
@@ -39,6 +40,7 @@ library
       ansi-terminal
     , base >=4.7 && <5
     , bytestring
+    , containers
     , mtl
     , text
     , vector
@@ -55,6 +57,7 @@ executable hrogue-exe
       ansi-terminal
     , base >=4.7 && <5
     , bytestring
+    , containers
     , hrogue
     , mtl
     , text
@@ -73,6 +76,7 @@ test-suite hrogue-test
       ansi-terminal
     , base >=4.7 && <5
     , bytestring
+    , containers
     , hrogue
     , mtl
     , text
