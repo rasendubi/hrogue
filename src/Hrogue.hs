@@ -25,9 +25,9 @@ newtype ActorId = ActorId { unActorId :: Int }
   deriving (Eq, Ord, Show)
 
 data HrogueState = HrogueState
-    { hrougeStateTerrainMap :: !TerrainMap
-    , hrougeStateActors     :: !(Map.Map ActorId Actor.Actor)
-    , hrougeStateNextId     :: !ActorId
+    { hrogueStateTerrainMap :: !TerrainMap
+    , hrogueStateActors     :: !(Map.Map ActorId Actor.Actor)
+    , hrogueStateNextId     :: !ActorId
     }
     deriving (Show)
 
@@ -64,14 +64,27 @@ run = withTerminal $ do
 game :: HrogueM ()
 game = do
   redraw
+  tick
+  game
+
+tick :: HrogueM ()
+tick = do
+  actors <- gets hrogueStateActors
+  forM_ (Map.assocs actors) $ uncurry takeTurn
+
+takeTurn :: ActorId -> Actor -> HrogueM ()
+takeTurn actorId actor = takeTurn' (Actor.actorType actor) actorId actor
+
+takeTurn' :: Actor.ActorType -> ActorId -> Actor -> HrogueM ()
+takeTurn' Actor.Player actorId actor = do
   k <- liftIO getKey
-  processKey k
-  unless (k == "q") game
+  processKey actorId k
+takeTurn' _            actorId actor = return ()
 
 redraw :: HrogueM ()
 redraw = do
-  level <- gets hrougeStateTerrainMap
-  actors <- gets hrougeStateActors
+  level <- gets hrogueStateTerrainMap
+  actors <- gets hrogueStateActors
   liftIO $ do
     clearScreen
 
@@ -81,29 +94,27 @@ redraw = do
 
     forM_ (Map.elems actors) Actor.displayActor
 
-processKey :: String -> HrogueM ()
-processKey k =
-  case k of
-    "\ESC[A" -> movePlayer up
-    "e"      -> movePlayer up
-    "\ESC[B" -> movePlayer down
-    "n"      -> movePlayer down
-    "\ESC[C" -> movePlayer right
-    "o"      -> movePlayer right
-    "\ESC[D" -> movePlayer left
-    "y"      -> movePlayer left
-    "j"      -> movePlayer (up   `pointPlus` left)
-    "f"      -> movePlayer (up   `pointPlus` right)
-    "v"      -> movePlayer (down `pointPlus` left)
-    "k"      -> movePlayer (down `pointPlus` right)
+processKey :: ActorId -> String -> HrogueM ()
+processKey actorId k =
+  let move = moveActor actorId
+  in case k of
+    "\ESC[A" -> move up
+    "e"      -> move up
+    "\ESC[B" -> move down
+    "n"      -> move down
+    "\ESC[C" -> move right
+    "o"      -> move right
+    "\ESC[D" -> move left
+    "y"      -> move left
+    "j"      -> move (up   `pointPlus` left)
+    "f"      -> move (up   `pointPlus` right)
+    "v"      -> move (down `pointPlus` left)
+    "k"      -> move (down `pointPlus` right)
     _        -> return ()
-
-movePlayer :: Point -> HrogueM ()
-movePlayer = moveActor playerId
 
 moveActor :: ActorId -> Point -> HrogueM ()
 moveActor actorId pdiff = do
-  terrain <- gets hrougeStateTerrainMap
+  terrain <- gets hrogueStateTerrainMap
   let adjustActor actor =
         let
           prev = Actor.actorPosition actor
@@ -111,7 +122,7 @@ moveActor actorId pdiff = do
           cell = terrainMapCell terrain next
         in if isWalkable cell then actor{ Actor.actorPosition = next } else actor
   modify' $ \state ->
-    state{ hrougeStateActors = Map.adjust adjustActor actorId (hrougeStateActors state) }
+    state{ hrogueStateActors = Map.adjust adjustActor actorId (hrogueStateActors state) }
 
 left, right, up, down :: Point
 left  = Point (-1) 0
