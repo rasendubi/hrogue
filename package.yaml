@@ -27,6 +27,7 @@ dependencies:
 - text
 - ansi-terminal
 - mtl
+- mersenne-random-pure64
 
 library:
   source-dirs: src

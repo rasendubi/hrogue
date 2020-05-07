@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fcabeb04a2036949f45d13673669376dd8164a48a3d95d27fc02fc791013010b
+-- hash: 0af254ab31d775b4018aa8ed4648ca8e1314b41f1dafe2326d0efc30b89f69df
 
 name:           hrogue
 version:        0.1.0.0
@@ -41,6 +41,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , containers
+    , mersenne-random-pure64
     , mtl
     , text
     , vector
@@ -59,6 +60,7 @@ executable hrogue-exe
     , bytestring
     , containers
     , hrogue
+    , mersenne-random-pure64
     , mtl
     , text
     , vector
@@ -78,6 +80,7 @@ test-suite hrogue-test
     , bytestring
     , containers
     , hrogue
+    , mersenne-random-pure64
     , mtl
     , text
     , vector

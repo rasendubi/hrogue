@@ -1,25 +1,29 @@
 module Hrogue (run) where
 
-import           Control.Monad              (forM_, unless, void, when)
-import           Control.Monad.IO.Class     (liftIO)
-import           Control.Monad.State.Strict (StateT (..), get, gets, modify',
-                                             put)
+import           System.IO                     (hPrint, hPutStrLn, stderr)
 
-import qualified Data.Map.Strict            as Map
-import           Data.Text.IO               as T
+import           Control.Monad                 (forM_, unless, void, when)
+import           Control.Monad.IO.Class        (liftIO)
+import           Control.Monad.State.Strict    (StateT (..), get, gets, modify',
+                                                put)
 
-import qualified System.Console.ANSI        as ANSI
-import qualified System.Console.ANSI.Types  as ANSI
+import qualified Data.Map.Strict               as Map
+import qualified Data.Text.IO                  as T
 
-import           Hrogue.Data.Actor          (Actor)
-import qualified Hrogue.Data.Actor          as Actor
-import           Hrogue.Data.Level          (TerrainMap, isWalkable, parseMap,
-                                             terrainMapCell,
-                                             terrainMapStartPosition,
-                                             terrainMapToString)
-import           Hrogue.Data.Point          (Point (Point), pointPlus)
-import           Hrogue.Terminal            (clearScreen, getKey, goto,
-                                             putSymbol, withTerminal)
+import qualified System.Console.ANSI           as ANSI
+import qualified System.Console.ANSI.Types     as ANSI
+
+import qualified System.Random.Mersenne.Pure64 as MT
+
+import           Hrogue.Data.Actor             (Actor)
+import qualified Hrogue.Data.Actor             as Actor
+import           Hrogue.Data.Level             (TerrainMap, isWalkable,
+                                                parseMap, terrainMapCell,
+                                                terrainMapStartPosition,
+                                                terrainMapToString)
+import           Hrogue.Data.Point             (Point (Point), pointPlus)
+import           Hrogue.Terminal               (clearScreen, getKey, goto,
+                                                putSymbol, withTerminal)
 
 newtype ActorId = ActorId { unActorId :: Int }
   deriving (Eq, Ord, Show)
@@ -28,10 +32,18 @@ data HrogueState = HrogueState
     { hrogueStateTerrainMap :: !TerrainMap
     , hrogueStateActors     :: !(Map.Map ActorId Actor.Actor)
     , hrogueStateNextId     :: !ActorId
+    , hrogueStateRng        :: !MT.PureMT
     }
     deriving (Show)
 
 type HrogueM = StateT HrogueState IO
+
+hrougeRndInt :: HrogueM Int
+hrougeRndInt = do
+  rng <- gets hrogueStateRng
+  let (result, nextRng) = MT.randomInt rng
+  modify' $ \state -> state{ hrogueStateRng = nextRng }
+  return result
 
 playerId = ActorId 0
 
@@ -58,7 +70,8 @@ run = withTerminal $ do
                         }
           )
         ]
-  let initialState = HrogueState level actors (ActorId 2)
+  rng <- liftIO MT.newPureMT
+  let initialState = HrogueState level actors (ActorId 2) rng
   void $ runStateT game initialState
 
 game :: HrogueM ()
@@ -79,7 +92,14 @@ takeTurn' :: Actor.ActorType -> ActorId -> Actor -> HrogueM ()
 takeTurn' Actor.Player actorId actor = do
   k <- liftIO getKey
   processKey actorId k
-takeTurn' _            actorId actor = return ()
+takeTurn' Actor.Snake  actorId actor = do
+  rnd <- hrougeRndInt
+  let move = moveActor actorId
+  case rnd `mod` 4 of
+    0 -> move left
+    1 -> move right
+    2 -> move up
+    3 -> move down
 
 redraw :: HrogueM ()
 redraw = do
