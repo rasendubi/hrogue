@@ -8,6 +8,8 @@ import           Control.Monad.State.Strict    (StateT (..), get, gets, modify',
                                                 put)
 
 import qualified Data.Map.Strict               as Map
+
+import qualified Data.Text                     as T
 import qualified Data.Text.IO                  as T
 
 import qualified System.Console.ANSI           as ANSI
@@ -33,6 +35,7 @@ data HrogueState = HrogueState
     , hrogueStateActors     :: !(Map.Map ActorId Actor.Actor)
     , hrogueStateNextId     :: !ActorId
     , hrogueStateRng        :: !MT.PureMT
+    , hrogueStateMessage    :: !(Maybe T.Text)
     }
     deriving (Show)
 
@@ -45,7 +48,11 @@ hrougeRndInt = do
   modify' $ \state -> state{ hrogueStateRng = nextRng }
   return result
 
+setMessage :: T.Text -> HrogueM ()
+setMessage m = modify' $ \state -> state{ hrogueStateMessage = Just m }
+
 playerId = ActorId 0
+
 
 run :: IO ()
 run = withTerminal $ do
@@ -71,8 +78,14 @@ run = withTerminal $ do
           )
         ]
   rng <- liftIO MT.newPureMT
-  let initialState = HrogueState level actors (ActorId 2) rng
+  let initialState = HrogueState { hrogueStateTerrainMap = level
+                                 , hrogueStateActors = actors
+                                 , hrogueStateNextId = ActorId 2
+                                 , hrogueStateRng = rng
+                                 , hrogueStateMessage = Just $ T.pack "Welcome to hrogue!"
+                                 }
   void $ runStateT game initialState
+
 
 game :: HrogueM ()
 game = do
@@ -101,16 +114,30 @@ takeTurn' Actor.Snake  actorId actor = do
     2 -> move up
     3 -> move down
 
+
 redraw :: HrogueM ()
 redraw = do
   level <- gets hrogueStateTerrainMap
   actors <- gets hrogueStateActors
+  mmessage <- gets hrogueStateMessage
+
+  modify' $ \state -> state{ hrogueStateMessage = Nothing }
+
   liftIO $ do
+    -- draw map
     goto (Point 0 0)
     ANSI.setSGR []
     T.putStr (terrainMapToString level)
 
+    -- draw actors
     forM_ (Map.elems actors) Actor.displayActor
+
+    -- display message
+    goto (Point 0 0)
+    ANSI.setSGR []
+    forM_ mmessage T.putStr
+    ANSI.clearFromCursorToLineEnd
+
 
 processKey :: ActorId -> String -> HrogueM ()
 processKey actorId k =
@@ -130,6 +157,7 @@ processKey actorId k =
     "k"      -> move (down `pointPlus` right)
     _        -> return ()
 
+
 moveActor :: ActorId -> Point -> HrogueM ()
 moveActor actorId pdiff = do
   terrain <- gets hrogueStateTerrainMap
@@ -141,6 +169,7 @@ moveActor actorId pdiff = do
         in if isWalkable cell then actor{ Actor.actorPosition = next } else actor
   modify' $ \state ->
     state{ hrogueStateActors = Map.adjust adjustActor actorId (hrogueStateActors state) }
+
 
 left, right, up, down :: Point
 left  = Point (-1) 0
