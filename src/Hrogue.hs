@@ -1,8 +1,10 @@
 module Hrogue (run) where
 
+import           Data.List                     (find)
+import           Data.Maybe                    (listToMaybe)
 import           System.IO                     (hPrint, hPutStrLn, stderr)
 
-import           Control.Monad                 (forM_, unless, void, when)
+import           Control.Monad                 (forM, forM_, unless, void, when)
 import           Control.Monad.IO.Class        (liftIO)
 import           Control.Monad.State.Strict    (StateT (..), get, gets, modify',
                                                 put)
@@ -51,6 +53,12 @@ hrougeRndInt = do
 setMessage :: T.Text -> HrogueM ()
 setMessage m = modify' $ \state -> state{ hrogueStateMessage = Just m }
 
+getActor :: ActorId -> HrogueM (Maybe Actor)
+getActor id = (Map.!? id) <$> gets hrogueStateActors
+
+getActorUnsafe :: ActorId -> HrogueM Actor
+getActorUnsafe id = (Map.! id) <$> gets hrogueStateActors
+
 playerId = ActorId 0
 
 
@@ -65,6 +73,7 @@ run = withTerminal $ do
                         , Actor.actorSgr = [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
                                            , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
                                            ]
+                        , Actor.actorHitpoints = 100
                         }
           )
         , ( ActorId 1
@@ -74,6 +83,7 @@ run = withTerminal $ do
                         , Actor.actorSgr = [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
                                            , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
                                            ]
+                        , Actor.actorHitpoints = 30
                         }
           )
         ]
@@ -96,7 +106,14 @@ game = do
 tick :: HrogueM ()
 tick = do
   actors <- gets hrogueStateActors
-  forM_ (Map.assocs actors) $ uncurry takeTurn
+  forM_ (Map.keys actors) maybeTakeTurn
+
+-- additional check that actor didn't just died from previous actor's
+-- move
+maybeTakeTurn :: ActorId -> HrogueM ()
+maybeTakeTurn actorId = do
+  mactor <- getActor actorId
+  forM_ mactor $ takeTurn actorId
 
 takeTurn :: ActorId -> Actor -> HrogueM ()
 takeTurn actorId actor = takeTurn' (Actor.actorType actor) actorId actor
@@ -123,6 +140,8 @@ redraw = do
 
   modify' $ \state -> state{ hrogueStateMessage = Nothing }
 
+  status <- statusLine
+
   liftIO $ do
     -- draw map
     goto (Point 0 0)
@@ -138,6 +157,19 @@ redraw = do
     forM_ mmessage T.putStr
     ANSI.clearFromCursorToLineEnd
 
+    -- display status bar
+    goto (Point 0 24)
+    ANSI.setSGR []
+    T.putStr status
+    ANSI.clearFromCursorToLineEnd
+
+
+statusLine :: HrogueM T.Text
+statusLine = do
+  mactor <- getActor playerId
+  return $ case mactor of
+    Nothing    -> T.empty
+    Just actor -> T.pack "HP:" <> T.pack (show $ Actor.actorHitpoints actor)
 
 processKey :: ActorId -> String -> HrogueM ()
 processKey actorId k =
@@ -161,15 +193,42 @@ processKey actorId k =
 moveActor :: ActorId -> Point -> HrogueM ()
 moveActor actorId pdiff = do
   terrain <- gets hrogueStateTerrainMap
-  let adjustActor actor =
-        let
-          prev = Actor.actorPosition actor
-          next = prev `pointPlus` pdiff
-          cell = terrainMapCell terrain next
-        in if isWalkable cell then actor{ Actor.actorPosition = next } else actor
-  modify' $ \state ->
-    state{ hrogueStateActors = Map.adjust adjustActor actorId (hrogueStateActors state) }
+  actor <- getActorUnsafe actorId
+  let prev = Actor.actorPosition actor
+  let next = prev `pointPlus` pdiff
+  let cell = terrainMapCell terrain next
 
+  manotherActor <- actorAtPoint next
+
+  case manotherActor of
+    Just (bActorId, bActor) -> do
+      let nextHitpoints = Actor.actorHitpoints bActor - 10
+      if nextHitpoints <= 0
+        then do
+          deleteActor bActorId
+          setMessage $ T.pack (show $ Actor.actorType bActor) <> T.pack " is killed"
+        else do
+          modifyActor bActorId $ const bActor{ Actor.actorHitpoints = nextHitpoints }
+          when (actorId == playerId) $
+            setMessage $ T.pack "You hit " <> T.pack (show $ Actor.actorType bActor)
+          when (bActorId == playerId) $
+            setMessage $ T.pack (show $ Actor.actorType actor) <> T.pack " hits you"
+    Nothing ->
+      when (isWalkable cell) $
+        modifyActor actorId $ \a -> a{ Actor.actorPosition = next }
+
+modifyActor :: ActorId -> (Actor -> Actor) -> HrogueM ()
+modifyActor actorId f =
+  modify' $ \state -> state{ hrogueStateActors = Map.adjust f actorId (hrogueStateActors state) }
+
+deleteActor :: ActorId -> HrogueM ()
+deleteActor actorId =
+  modify' $ \state -> state{ hrogueStateActors = Map.delete actorId (hrogueStateActors state) }
+
+actorAtPoint :: Point -> HrogueM (Maybe (ActorId, Actor))
+actorAtPoint target = do
+  actors <- gets hrogueStateActors
+  return $ find (\(_, Actor.Actor{ Actor.actorPosition = p }) -> p == target) . Map.toList $ actors
 
 left, right, up, down :: Point
 left  = Point (-1) 0

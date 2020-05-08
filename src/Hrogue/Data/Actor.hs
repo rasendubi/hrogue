@@ -15,10 +15,11 @@ data ActorType = Player
     deriving (Eq, Show)
 
 data Actor = Actor
-    { actorType     :: !ActorType
-    , actorPosition :: !Point
-    , actorSymbol   :: !Char
-    , actorSgr      :: ![ANSI.SGR]
+    { actorType      :: !ActorType
+    , actorPosition  :: !Point
+    , actorSymbol    :: !Char
+    , actorSgr       :: ![ANSI.SGR]
+    , actorHitpoints :: !Int
     }
     deriving (Eq, Show)
 
