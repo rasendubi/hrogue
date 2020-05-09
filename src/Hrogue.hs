@@ -17,6 +17,7 @@ import qualified Data.Text.IO                  as T
 import qualified System.Console.ANSI           as ANSI
 import qualified System.Console.ANSI.Types     as ANSI
 
+import qualified System.Random                 as R
 import qualified System.Random.Mersenne.Pure64 as MT
 
 import           Hrogue.Data.Actor             (Actor)
@@ -43,11 +44,18 @@ data HrogueState = HrogueState
 
 type HrogueM = StateT HrogueState IO
 
-hrougeRndInt :: HrogueM Int
-hrougeRndInt = do
+hrogueRndInt :: HrogueM Int
+hrogueRndInt = do
   rng <- gets hrogueStateRng
-  let (result, nextRng) = MT.randomInt rng
-  modify' $ \state -> state{ hrogueStateRng = nextRng }
+  let (result, rng') = MT.randomInt rng
+  modify' $ \state -> state{ hrogueStateRng = rng' }
+  return result
+
+hrogueRndRange :: R.Random a => (a, a) -> HrogueM a
+hrogueRndRange range = do
+  rng <- gets hrogueStateRng
+  let (result, rng') = R.randomR range rng
+  modify' $ \state -> state{ hrogueStateRng = rng' }
   return result
 
 setMessage :: T.Text -> HrogueM ()
@@ -61,6 +69,16 @@ getActorUnsafe id = (Map.! id) <$> gets hrogueStateActors
 
 playerId = ActorId 0
 
+snake :: Point -> Actor
+snake position =
+  Actor.Actor { Actor.actorType = Actor.Snake
+              , Actor.actorPosition = position
+              , Actor.actorSymbol  = 's'
+              , Actor.actorSgr = [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
+                                 , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
+                                 ]
+              , Actor.actorHitpoints = 30
+              }
 
 run :: IO ()
 run = withTerminal $ do
@@ -76,21 +94,13 @@ run = withTerminal $ do
                         , Actor.actorHitpoints = 100
                         }
           )
-        , ( ActorId 1
-          , Actor.Actor { Actor.actorType = Actor.Snake
-                        , Actor.actorPosition = Point 77 9
-                        , Actor.actorSymbol  = 's'
-                        , Actor.actorSgr = [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
-                                           , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
-                                           ]
-                        , Actor.actorHitpoints = 30
-                        }
-          )
+        , ( ActorId 1 , snake $ Point 77 9 )
+        , ( ActorId 2 , snake $ Point 14 10 )
         ]
   rng <- liftIO MT.newPureMT
   let initialState = HrogueState { hrogueStateTerrainMap = level
                                  , hrogueStateActors = actors
-                                 , hrogueStateNextId = ActorId 2
+                                 , hrogueStateNextId = ActorId 3
                                  , hrogueStateRng = rng
                                  , hrogueStateMessage = Just $ T.pack "Welcome to hrogue!"
                                  }
@@ -123,13 +133,18 @@ takeTurn' Actor.Player actorId actor = do
   k <- liftIO getKey
   processKey actorId k
 takeTurn' Actor.Snake  actorId actor = do
-  rnd <- hrougeRndInt
+  rnd <- hrogueRndRange (0 :: Int, 8)
   let move = moveActor actorId
-  case rnd `mod` 4 of
+  case rnd of
     0 -> move left
     1 -> move right
     2 -> move up
     3 -> move down
+    4 -> move (up   `pointPlus` left)
+    5 -> move (up   `pointPlus` right)
+    6 -> move (down `pointPlus` left)
+    7 -> move (down `pointPlus` right)
+    8 -> return ()
 
 
 redraw :: HrogueM ()
