@@ -29,6 +29,7 @@ dependencies:
 - mtl
 - random
 - mersenne-random-pure64
+- search-algorithms
 
 library:
   source-dirs: src

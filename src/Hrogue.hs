@@ -20,13 +20,16 @@ import qualified System.Console.ANSI.Types     as ANSI
 import qualified System.Random                 as R
 import qualified System.Random.Mersenne.Pure64 as MT
 
+import qualified Algorithm.Search              as S
+
 import           Hrogue.Data.Actor             (Actor)
 import qualified Hrogue.Data.Actor             as Actor
 import           Hrogue.Data.Level             (TerrainMap, isWalkable,
                                                 parseMap, terrainMapCell,
                                                 terrainMapStartPosition,
                                                 terrainMapToString)
-import           Hrogue.Data.Point             (Point (Point), pointPlus)
+import           Hrogue.Data.Point             (Point (Point), pointMinus,
+                                                pointPlus)
 import           Hrogue.Terminal               (clearScreen, getKey, goto,
                                                 putSymbol, withTerminal)
 
@@ -132,19 +135,17 @@ takeTurn' :: Actor.ActorType -> ActorId -> Actor -> HrogueM ()
 takeTurn' Actor.Player actorId actor = do
   k <- liftIO getKey
   processKey actorId k
+
 takeTurn' Actor.Snake  actorId actor = do
-  rnd <- hrogueRndRange (0 :: Int, 8)
-  let move = moveActor actorId
-  case rnd of
-    0 -> move left
-    1 -> move right
-    2 -> move up
-    3 -> move down
-    4 -> move (up   `pointPlus` left)
-    5 -> move (up   `pointPlus` right)
-    6 -> move (down `pointPlus` left)
-    7 -> move (down `pointPlus` right)
-    8 -> return ()
+  let currentPos = Actor.actorPosition actor
+  terrain <- gets hrogueStateTerrainMap
+  mplayer <- fmap Actor.actorPosition <$> getActor playerId
+  let mnext = mplayer >>= \player -> do
+        (price, path) <- searchPath currentPos player terrain
+        return $ head path
+
+  forM_ mnext $ \next ->
+    moveActor actorId (next `pointMinus` currentPos)
 
 
 redraw :: HrogueM ()
@@ -250,3 +251,22 @@ left  = Point (-1) 0
 right = Point 1 0
 up    = Point 0 (-1)
 down  = Point 0 1
+
+directions = [ left
+             , right
+             , up
+             , down
+             , left <> up
+             , left <> down
+             , right <> up
+             , right <> down
+             ]
+
+searchPath :: Point -> Point -> TerrainMap -> Maybe (Int, [Point])
+searchPath from to map = S.aStar (next `S.pruning` isWall) cost estimate (== to) from
+  where
+    isWall = not . isWalkable . terrainMapCell map
+    next p = fmap (p <>) directions
+    cost (Point x1 y1) (Point x2 y2) = 1 -- all neighboring cells have cost of 1
+    estimate (Point x1 y1) = abs (x1 - x2) + abs (y1 - y2)
+      where (Point x2 y2) = to

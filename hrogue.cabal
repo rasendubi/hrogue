@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9cd0523707285984f9604110c865a31ca195239e65762cb197a4166c3fdde05b
+-- hash: e057ff5c1ebd685a306f10ad4639802e754441deb09ba272fb02002d333f764f
 
 name:           hrogue
 version:        0.1.0.0
@@ -44,6 +44,7 @@ library
     , mersenne-random-pure64
     , mtl
     , random
+    , search-algorithms
     , text
     , vector
   default-language: Haskell2010
@@ -64,6 +65,7 @@ executable hrogue-exe
     , mersenne-random-pure64
     , mtl
     , random
+    , search-algorithms
     , text
     , vector
   default-language: Haskell2010
@@ -85,6 +87,7 @@ test-suite hrogue-test
     , mersenne-random-pure64
     , mtl
     , random
+    , search-algorithms
     , text
     , vector
   default-language: Haskell2010
