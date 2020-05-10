@@ -48,10 +48,13 @@ charToTerrainCell '.' = Floor
 charToTerrainCell '<' = Floor
 charToTerrainCell '#' = Corridor
 charToTerrainCell ' ' = Wall
+charToTerrainCell _   = undefined
 
+terrainCellToChar :: TerrainCell -> Char
 terrainCellToChar Floor    = '.'
 terrainCellToChar Corridor = '#'
 terrainCellToChar Wall     = ' '
 
+terrainMapToString :: TerrainMap -> Text
 terrainMapToString =
   T.unlines . V.toList . V.map (T.pack . V.toList . V.map terrainCellToChar) . unTerrainMap

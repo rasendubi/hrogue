@@ -1,27 +1,23 @@
+{-# LANGUAGE StandaloneDeriving #-}
 module Hrogue.Data.Actor
-  ( ActorType(..)
-  , Actor(..)
-  , displayActor
+  ( Actor(..)
+  , ActorId(..)
   ) where
 
 import qualified System.Console.ANSI as ANSI
 
-import qualified Hrogue.Terminal     as Terminal
+import           Hrogue.Data.Point   (Point)
 
-import           Hrogue.Data.Point   (Point (Point))
+newtype ActorId = ActorId { unActorId :: Int }
+  deriving (Eq, Ord, Show)
 
-data ActorType = Player
-    | Snake
-    deriving (Eq, Show)
-
-data Actor = Actor
-    { actorType      :: !ActorType
+data Actor state = Actor
+    { actorId        :: !ActorId
     , actorPosition  :: !Point
     , actorSymbol    :: !Char
     , actorSgr       :: ![ANSI.SGR]
     , actorHitpoints :: !Int
+    , actorState     :: !state
     }
-    deriving (Eq, Show)
 
-displayActor :: Actor -> IO ()
-displayActor a = Terminal.putSymbol (actorPosition a) (actorSgr a) (actorSymbol a)
+deriving instance Show state => Show (Actor state)
