@@ -12,12 +12,12 @@ newtype ActorId = ActorId { unActorId :: Int }
   deriving (Eq, Ord, Show)
 
 data Actor state = Actor
-    { actorId        :: !ActorId
-    , actorPosition  :: !Point
-    , actorSymbol    :: !Char
-    , actorSgr       :: ![ANSI.SGR]
-    , actorHitpoints :: !Int
-    , actorState     :: !state
+    { id        :: !ActorId
+    , position  :: !Point
+    , symbol    :: !Char
+    , sgr       :: ![ANSI.SGR]
+    , hitpoints :: !Int
+    , state     :: !state
     }
 
 deriving instance Show state => Show (Actor state)

@@ -24,7 +24,7 @@ playerTurn actor = do
   processKey actor k
 
 processKey :: Actor Player -> String -> HrogueM ()
-processKey Actor.Actor{ Actor.actorId = actorId } k =
+processKey Actor.Actor{ Actor.id = actorId } k =
   let move = moveActor actorId
   in case k of
     "\ESC[A" -> move up

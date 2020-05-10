@@ -15,6 +15,7 @@ import           Hrogue.Data.Level          (TerrainMap, isWalkable,
                                              terrainMapCell)
 import           Hrogue.Data.Point          (Point (Point), directions,
                                              pointMinus)
+import qualified Hrogue.Data.HrogueState as HrogueState
 
 data Snake = Snake
     deriving (Show)
@@ -24,9 +25,9 @@ instance ActorType Snake where
   actorTakeTurn = snakeTurn
 
 snakeTurn :: Actor Snake -> HrogueM ()
-snakeTurn Actor{ Actor.actorId = actorId, Actor.actorPosition = currentPos } = do
-  terrain <- gets hrogueStateTerrainMap
-  mplayer <- fmap (\(AnyActor actor) -> Actor.actorPosition actor) <$> getActor playerId
+snakeTurn Actor{ Actor.id = actorId, Actor.position = currentPos } = do
+  terrain <- gets HrogueState.terrainMap
+  mplayer <- fmap (\(AnyActor actor) -> Actor.position actor) <$> getActor playerId
   let mnext = mplayer >>= \player -> do
         (_price, path) <- searchPath currentPos player terrain
         return $ head path

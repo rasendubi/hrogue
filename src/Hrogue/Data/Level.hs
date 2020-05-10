@@ -15,7 +15,8 @@ import qualified Data.Vector       as V
 
 import           Hrogue.Data.Point (Point (Point))
 
-data TerrainCell = Floor
+data TerrainCell
+    = Floor
     | Corridor
     | Wall
     deriving (Eq, Show)
@@ -31,12 +32,11 @@ terrainMapCell :: TerrainMap -> Point -> TerrainCell
 terrainMapCell m (Point x y) = (V.! x) . (V.! y) . unTerrainMap $ m
 
 parseMap :: Text -> TerrainMap
-parseMap t =
-  let
+parseMap t = TerrainMap terrain (sizeX, sizeY) (Point startX startY)
+  where
     headerLine:mapLines = T.lines t
     [sizeX, sizeY, startX, startY] = map (read . T.unpack) . T.words $ headerLine
     terrain = V.fromList . map (V.fromList . map charToTerrainCell . T.unpack) $ mapLines
-  in TerrainMap terrain (sizeX, sizeY) (Point startX startY)
 
 isWalkable :: TerrainCell -> Bool
 isWalkable Floor    = True
@@ -56,5 +56,6 @@ terrainCellToChar Corridor = '#'
 terrainCellToChar Wall     = ' '
 
 terrainMapToString :: TerrainMap -> Text
-terrainMapToString =
-  T.unlines . V.toList . V.map (T.pack . V.toList . V.map terrainCellToChar) . unTerrainMap
+terrainMapToString = T.unlines . V.toList . V.map lineToString . unTerrainMap
+  where
+    lineToString = T.pack . V.toList . V.map terrainCellToChar

@@ -31,12 +31,13 @@ up    = Point 0 (-1)
 down  = Point 0 1
 
 directions :: [Point]
-directions = [ left
-             , right
-             , up
-             , down
-             , left <> up
-             , left <> down
-             , right <> up
-             , right <> down
-             ]
+directions =
+  [ left
+  , right
+  , up
+  , down
+  , left <> up
+  , left <> down
+  , right <> up
+  , right <> down
+  ]

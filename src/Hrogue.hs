@@ -15,6 +15,7 @@ import qualified System.Random                 as R
 import qualified System.Random.Mersenne.Pure64 as MT
 
 import qualified Hrogue.Data.Actor             as Actor
+import qualified Hrogue.Data.HrogueState       as HrogueState
 import           Hrogue.Data.Level             (parseMap,
                                                 terrainMapStartPosition,
                                                 terrainMapToString)
@@ -26,57 +27,62 @@ import           Hrogue.Data.Actor.Snake       (Snake (Snake))
 
 import           Hrogue.Control.HrogueM
 
-hrogueRndInt :: HrogueM Int
-hrogueRndInt = do
-  rng <- gets hrogueStateRng
+_hrogueRndInt :: HrogueM Int
+_hrogueRndInt = do
+  rng <- gets HrogueState.rng
   let (result, rng') = MT.randomInt rng
-  modify' $ \state -> state{ hrogueStateRng = rng' }
+  modify' $ \state -> state{ HrogueState.rng = rng' }
   return result
 
-hrogueRndRange :: R.Random a => (a, a) -> HrogueM a
-hrogueRndRange range = do
-  rng <- gets hrogueStateRng
+_hrogueRndRange :: R.Random a => (a, a) -> HrogueM a
+_hrogueRndRange range = do
+  rng <- gets HrogueState.rng
   let (result, rng') = R.randomR range rng
-  modify' $ \state -> state{ hrogueStateRng = rng' }
+  modify' $ \state -> state{ HrogueState.rng = rng' }
   return result
 
 snake :: ActorId -> Point -> AnyActor
 snake actorId position = AnyActor $
-  Actor.Actor { Actor.actorId = actorId
-              , Actor.actorPosition = position
-              , Actor.actorSymbol  = 's'
-              , Actor.actorSgr = [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
-                                 , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
-                                 ]
-              , Actor.actorHitpoints = 30
-              , Actor.actorState = Snake
-              }
+  Actor.Actor
+    { Actor.id = actorId
+    , Actor.position = position
+    , Actor.symbol  = 's'
+    , Actor.sgr =
+      [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
+      , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
+      ]
+    , Actor.hitpoints = 30
+    , Actor.state = Snake
+    }
 
 run :: IO ()
 run = withTerminal $ do
   level <- parseMap <$> T.readFile "data/level.txt"
   let actorList =
         [ AnyActor $
-            Actor.Actor { Actor.actorId = playerId
-                        , Actor.actorPosition = terrainMapStartPosition level
-                        , Actor.actorSymbol = '@'
-                        , Actor.actorSgr = [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
-                                           , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
-                                           ]
-                        , Actor.actorHitpoints = 100
-                        , Actor.actorState = Player
-                        }
+            Actor.Actor
+              { Actor.id = playerId
+              , Actor.position = terrainMapStartPosition level
+              , Actor.symbol = '@'
+              , Actor.sgr =
+                [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
+                , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
+                ]
+              , Actor.hitpoints = 100
+              , Actor.state = Player
+              }
         , snake (ActorId 1) (Point 77 9)
         , snake (ActorId 2) (Point 14 10)
         ]
-  let actors = Map.fromList $ fmap (\any@(AnyActor a) -> (Actor.actorId a, any)) actorList
+  let actors = Map.fromList $ fmap (\actor@(AnyActor a) -> (Actor.id a, actor)) actorList
   rng <- liftIO MT.newPureMT
-  let initialState = HrogueState { hrogueStateTerrainMap = level
-                                 , hrogueStateActors = actors
-                                 , hrogueStateNextId = ActorId 3
-                                 , hrogueStateRng = rng
-                                 , hrogueStateMessage = Just $ T.pack "Welcome to hrogue!"
-                                 }
+  let initialState = HrogueState
+        { HrogueState.terrainMap = level
+        , HrogueState.actors = actors
+        , HrogueState.nextId = ActorId 3
+        , HrogueState.rng = rng
+        , HrogueState.message = Just $ T.pack "Welcome to hrogue!"
+        }
   void $ runStateT game initialState
 
 
@@ -88,7 +94,7 @@ game = do
 
 tick :: HrogueM ()
 tick = do
-  actors <- gets hrogueStateActors
+  actors <- gets HrogueState.actors
   forM_ (Map.keys actors) maybeTakeTurn
 
 -- additional check that actor didn't just died from previous actor's
@@ -98,26 +104,13 @@ maybeTakeTurn actorId = do
   mactor <- getActor actorId
   forM_ mactor $ \(AnyActor actor) -> actorTakeTurn actor
 
---
--- takeTurn' Actor.Snake  actorId actor = do
---   let currentPos = Actor.actorPosition actor
---   terrain <- gets hrogueStateTerrainMap
---   mplayer <- fmap Actor.actorPosition <$> getActor playerId
---   let mnext = mplayer >>= \player -> do
---         (price, path) <- searchPath currentPos player terrain
---         return $ head path
---
---   forM_ mnext $ \next ->
---     moveActor actorId (next `pointMinus` currentPos)
-
-
 redraw :: HrogueM ()
 redraw = do
-  level <- gets hrogueStateTerrainMap
-  actors <- gets hrogueStateActors
-  mmessage <- gets hrogueStateMessage
+  level <- gets HrogueState.terrainMap
+  actors <- gets HrogueState.actors
+  mmessage <- gets HrogueState.message
 
-  modify' $ \state -> state{ hrogueStateMessage = Nothing }
+  modify' $ \state -> state{ HrogueState.message = Nothing }
 
   status <- statusLine
 
@@ -148,4 +141,4 @@ statusLine = do
   mactor <- getActor playerId
   return $ case mactor of
     Nothing    -> T.empty
-    Just (AnyActor actor) -> T.pack "HP:" <> T.pack (show $ Actor.actorHitpoints actor)
+    Just (AnyActor actor) -> T.pack "HP:" <> T.pack (show $ Actor.hitpoints actor)
