@@ -25,6 +25,7 @@ dependencies:
 - vector
 - bytestring
 - text
+- lens
 - ansi-terminal
 - mtl
 - random

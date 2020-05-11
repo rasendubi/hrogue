@@ -1,21 +1,20 @@
 module Hrogue.Data.Actor.Snake (Snake(Snake)) where
 
-import qualified Data.Text                  as T
+import           Control.Lens            (use, uses, view, (^.))
+
+import           Control.Monad           (forM_)
+
+import qualified Data.Text               as T
 
 import           Hrogue.Control.HrogueM
 
-import           Control.Monad              (forM_)
-import           Control.Monad.State.Strict (gets)
+import qualified Algorithm.Search        as S
 
-import qualified Algorithm.Search           as S
-
-import           Hrogue.Data.Actor          (Actor (Actor))
-import qualified Hrogue.Data.Actor          as Actor
-import           Hrogue.Data.Level          (TerrainMap, isWalkable,
-                                             terrainMapCell)
-import           Hrogue.Data.Point          (Point (Point), directions,
-                                             pointMinus)
+import qualified Hrogue.Data.Actor       as Actor
 import qualified Hrogue.Data.HrogueState as HrogueState
+import           Hrogue.Data.Level       (TerrainMap, isWalkable,
+                                          terrainMapCell)
+import           Hrogue.Data.Point       (Point (Point), directions, pointMinus)
 
 data Snake = Snake
     deriving (Show)
@@ -24,10 +23,12 @@ instance ActorType Snake where
   actorName _ = T.pack "Snake"
   actorTakeTurn = snakeTurn
 
-snakeTurn :: Actor Snake -> HrogueM ()
-snakeTurn Actor{ Actor.id = actorId, Actor.position = currentPos } = do
-  terrain <- gets HrogueState.terrainMap
-  mplayer <- fmap (\(AnyActor actor) -> Actor.position actor) <$> getActor playerId
+snakeTurn :: ActorWithState Snake -> HrogueM ()
+snakeTurn a = do
+  let actorId = a ^. Actor.actorId
+  let currentPos = a ^. Actor.position
+  terrain <- use HrogueState.terrainMap
+  mplayer <- uses (HrogueState.actor playerId) (fmap $ view Actor.position)
   let mnext = mplayer >>= \player -> do
         (_price, path) <- searchPath currentPos player terrain
         return $ head path
