@@ -7,8 +7,6 @@ module Hrogue.Data.HrogueState
   , nextId
   , rng
   , message
-  , ActorWithState(ActorWithState)
-  , actorState
   , actor
   , actorAtPoint
   ) where
@@ -22,31 +20,23 @@ import qualified Data.Text                     as T
 
 import qualified System.Random.Mersenne.Pure64 as MT
 
-import           Hrogue.Data.Actor             (Actor, ActorId (..))
+import           Hrogue.Data.Actor             (ActorId (..), HasBaseActor)
 import qualified Hrogue.Data.Actor             as Actor
 import           Hrogue.Data.Level             (TerrainMap)
 import           Hrogue.Data.Point             (Point)
 
-data ActorWithState actorState = ActorWithState
-    { _actorWithStateActor :: !Actor
-    , _actorState          :: !actorState
-    }
-
-data HrogueState actorState = HrogueState
+data HrogueState actor = HrogueState
     { _terrainMap :: !TerrainMap
-    , _actors     :: !(Map.Map ActorId (ActorWithState actorState))
+    , _actors     :: !(Map.Map ActorId actor)
     , _nextId     :: !ActorId
     , _rng        :: !MT.PureMT
     , _message    :: !(Maybe T.Text)
     }
 
-makeLenses ''ActorWithState
 makeLenses ''HrogueState
 
-instance Actor.HasActor (ActorWithState state) where actor = actorWithStateActor
-
-actor :: ActorId -> Lens' (HrogueState state) (Maybe (ActorWithState state))
+actor :: ActorId -> Lens' (HrogueState actor) (Maybe actor)
 actor idx = actors . at idx
 
-actorAtPoint :: Point -> HrogueState actorState -> Maybe (ActorWithState actorState)
+actorAtPoint :: HasBaseActor actor => Point -> HrogueState actor -> Maybe actor
 actorAtPoint p state = find (\a -> a ^. Actor.position == p) (state ^. actors)

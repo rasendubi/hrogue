@@ -1,10 +1,12 @@
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
 module Hrogue.Data.Actor.Snake (Snake(Snake)) where
 
 import           Control.Lens            (use, uses, view, (^.))
+import           Control.Lens.TH         (makeClassy)
 
 import           Control.Monad           (forM_)
-
-import qualified Data.Text               as T
 
 import           Hrogue.Control.HrogueM
 
@@ -17,13 +19,18 @@ import           Hrogue.Data.Level       (TerrainMap, isWalkable,
 import           Hrogue.Data.Point       (Point (Point), directions, pointMinus)
 
 data Snake = Snake
+    { _baseActor :: Actor.BaseActor
+    }
     deriving (Show)
 
-instance ActorType Snake where
-  actorName _ = T.pack "Snake"
-  actorTakeTurn = snakeTurn
+makeClassy ''Snake
 
-snakeTurn :: ActorWithState Snake -> HrogueM ()
+instance Actor.HasBaseActor Snake where baseActor = baseActor
+
+instance Actor.Actor (HrogueM ()) Snake where
+  takeTurn = snakeTurn
+
+snakeTurn :: Snake -> HrogueM ()
 snakeTurn a = do
   let actorId = a ^. Actor.actorId
   let currentPos = a ^. Actor.position

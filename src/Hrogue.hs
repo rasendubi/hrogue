@@ -1,6 +1,6 @@
 module Hrogue (run) where
 
-import Control.Lens ((^.), (.=), use)
+import           Control.Lens                  (use, (.=), (^.))
 
 import           Control.Monad                 (forM_, void)
 import           Control.Monad.IO.Class        (liftIO)
@@ -29,33 +29,37 @@ import           Hrogue.Data.Actor.Snake       (Snake (Snake))
 import           Hrogue.Control.HrogueM
 
 
-snake :: ActorId -> Point -> ActorWithAnyState
-snake actorId position = ActorWithState
-  Actor.Actor
-    { Actor._actorId = actorId
-    , Actor._position = position
-    , Actor._symbol  = 's'
-    , Actor._sgr =
-      [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
-      , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
-      ]
-    , Actor._hitpoints = 30
-    }
-  (AnyActorState Snake)
+snake :: ActorId -> Point -> AnyActor
+snake actorId position =
+  AnyActor $
+    Snake $
+      Actor.BaseActor
+        { Actor._actorId = actorId
+        , Actor._name = T.pack "Snake"
+        , Actor._position = position
+        , Actor._symbol  = 's'
+        , Actor._sgr =
+          [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
+          , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
+          ]
+        , Actor._hitpoints = 30
+        }
 
-player :: ActorId -> Point -> ActorWithAnyState
-player actorId position = ActorWithState
-  Actor.Actor
-    { Actor._actorId = actorId
-    , Actor._position = position
-    , Actor._symbol = '@'
-    , Actor._sgr =
-        [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
-        , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
-        ]
-    , Actor._hitpoints = 100
-    }
-  (AnyActorState Player)
+player :: ActorId -> Point -> AnyActor
+player actorId position =
+  AnyActor $
+    Player $
+      Actor.BaseActor
+        { Actor._actorId = actorId
+        , Actor._name = T.pack "Player"
+        , Actor._position = position
+        , Actor._symbol = '@'
+        , Actor._sgr =
+            [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
+            , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
+            ]
+        , Actor._hitpoints = 100
+        }
 
 run :: IO ()
 run = withTerminal $ do
@@ -90,7 +94,9 @@ tick = do
 -- additional check that actor didn't just died from previous actor's
 -- move
 maybeTakeTurn :: ActorId -> HrogueM ()
-maybeTakeTurn actorId = use (HrogueState.actor actorId) >>= mapM_ actorTakeTurn
+maybeTakeTurn actorId = do
+  actors <- use (HrogueState.actor actorId)
+  forM_ actors (Actor.takeTurn :: AnyActor -> HrogueM ())
 
 redraw :: HrogueM ()
 redraw = do

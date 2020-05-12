@@ -1,23 +1,30 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
 module Hrogue.Data.Actor
   ( Actor(..)
   , ActorId(..)
-  , HasActor(..)
+  , BaseActor(..)
+  , HasBaseActor(..)
   ) where
 
-import Control.Lens.TH (makeClassy)
+import           Control.Lens.TH     (makeClassy)
+
+import qualified Data.Text           as T
 
 import qualified System.Console.ANSI as ANSI
 
 import           Hrogue.Data.Point   (Point)
 
-import Prelude hiding (id)
+class Actor action actor where
+  takeTurn :: actor -> action
 
 newtype ActorId = ActorId { unActorId :: Int }
   deriving (Eq, Ord, Show)
 
-data Actor = Actor
+data BaseActor = BaseActor
     { _actorId   :: !ActorId
+    , _name      :: !T.Text
     , _position  :: !Point
     , _symbol    :: !Char
     , _sgr       :: ![ANSI.SGR]
@@ -25,4 +32,4 @@ data Actor = Actor
     }
     deriving (Show)
 
-makeClassy ''Actor
+makeClassy ''BaseActor

@@ -1,14 +1,14 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
 
 -- | Main monad of the game
 module Hrogue.Control.HrogueM
   ( HrogueM
   , HrogueState(HrogueState)
   , ActorId(..)
-  , ActorType(..)
-  , AnyActorState(..)
-  , ActorWithAnyState
-  , ActorWithState(..)
+  , AnyActor(AnyActor)
   , playerId
   , setMessage
   , displayActor
@@ -18,8 +18,8 @@ module Hrogue.Control.HrogueM
   , actorAtPoint
   ) where
 
-import           Control.Lens               (at, use, (%=), (&), (.=), (.~),
-                                             (^.))
+import           Control.Lens               (at, lens, use, (%=), (&), (.=),
+                                             (.~), (^.))
 
 import           Control.Monad              (when)
 import           Control.Monad.State.Strict (StateT (..), gets)
@@ -31,24 +31,23 @@ import qualified Hrogue.Data.Actor          as Actor
 import           Hrogue.Data.Level          (isWalkable, terrainMapCell)
 import           Hrogue.Data.Point          (Point)
 
-import           Hrogue.Data.HrogueState    (ActorWithState (ActorWithState),
-                                             HrogueState)
+import           Hrogue.Data.HrogueState    (HrogueState)
 import qualified Hrogue.Data.HrogueState    as HrogueState
 import           Hrogue.Terminal            as Terminal
 
-type HrogueM = StateT (HrogueState AnyActorState) IO
+type HrogueM = StateT (HrogueState AnyActor) IO
 
-type ActorWithAnyState = ActorWithState AnyActorState
+data AnyActor = forall state .
+  (Actor.HasBaseActor state, Actor.Actor (HrogueM ()) state) =>
+  AnyActor state
 
-class ActorType actorState where
-  actorName :: ActorWithState actorState -> T.Text
-  actorTakeTurn :: ActorWithState actorState -> HrogueM ()
+instance Actor.HasBaseActor AnyActor where
+  baseActor = lens
+    (\(AnyActor a) -> a ^. Actor.baseActor)
+    (\(AnyActor a) x -> AnyActor (a & Actor.baseActor .~ x))
 
-instance ActorType AnyActorState where
-  actorName (ActorWithState a (AnyActorState x)) = actorName (ActorWithState a x)
-  actorTakeTurn (ActorWithState a (AnyActorState x)) = actorTakeTurn (ActorWithState a x)
-
-data AnyActorState = forall state . ActorType state => AnyActorState state
+instance Actor.Actor (HrogueM ()) AnyActor where
+  takeTurn (AnyActor a) = Actor.takeTurn a
 
 playerId :: ActorId
 playerId = ActorId 0
@@ -56,7 +55,7 @@ playerId = ActorId 0
 setMessage :: T.Text -> HrogueM ()
 setMessage m = HrogueState.message .= Just m
 
-displayActor :: ActorWithAnyState -> IO ()
+displayActor :: Actor.HasBaseActor actor => actor -> IO ()
 displayActor a =
   Terminal.putSymbol (a ^. Actor.position) (a ^. Actor.sgr) (a ^. Actor.symbol)
 
@@ -77,22 +76,22 @@ moveActor actorId pdiff = do
       if nextHitpoints <= 0
         then do
           HrogueState.actor bActorId .= Nothing
-          setMessage $ actorName bActor <> T.pack " is killed"
+          setMessage $ bActor ^. Actor.name <> T.pack " is killed"
         else do
           HrogueState.actor bActorId .= Just (bActor & Actor.hitpoints .~ nextHitpoints)
           when (actorId == playerId) $
-            setMessage $ T.pack "You hit " <> actorName bActor
+            setMessage $ T.pack "You hit " <> bActor ^. Actor.name
           when (bActorId == playerId) $
-            setMessage $ actorName actor <> T.pack " hits you"
+            setMessage $ actor ^. Actor.name <> T.pack " hits you"
     Nothing ->
       when (isWalkable cell) $
         modifyActor actorId $ \a -> a & Actor.position .~ next
 
-modifyActor :: ActorId -> (ActorWithAnyState -> ActorWithAnyState) -> HrogueM ()
+modifyActor :: ActorId -> (AnyActor -> AnyActor) -> HrogueM ()
 modifyActor actorId f = HrogueState.actor actorId %= fmap f
 
 deleteActor :: ActorId -> HrogueM ()
 deleteActor actorId = HrogueState.actors . at actorId .= Nothing
 
-actorAtPoint :: Point -> HrogueM (Maybe ActorWithAnyState)
+actorAtPoint :: Point -> HrogueM (Maybe AnyActor)
 actorAtPoint = gets . HrogueState.actorAtPoint

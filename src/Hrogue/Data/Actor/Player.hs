@@ -1,10 +1,12 @@
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
 module Hrogue.Data.Actor.Player (Player(Player)) where
 
 import           Control.Lens           ((^.))
+import           Control.Lens.TH        (makeClassy)
 
 import           Control.Monad.IO.Class (liftIO)
-
-import qualified Data.Text              as T
 
 import           Hrogue.Control.HrogueM
 import qualified Hrogue.Data.Actor      as Actor
@@ -13,18 +15,24 @@ import           Hrogue.Data.Point      (down, left, right, up)
 import           Hrogue.Terminal        (getKey)
 
 data Player = Player
+    { _baseActor :: Actor.BaseActor
+    }
     deriving (Show)
 
-instance ActorType Player where
-  actorName _ = T.pack "Player"
-  actorTakeTurn = playerTurn
+makeClassy ''Player
 
-playerTurn :: ActorWithState Player -> HrogueM ()
+instance Actor.HasBaseActor Player where
+  baseActor = baseActor
+
+instance Actor.Actor (HrogueM ()) Player where
+  takeTurn = playerTurn
+
+playerTurn :: Player -> HrogueM ()
 playerTurn actor = do
   k <- liftIO getKey
   processKey actor k
 
-processKey :: ActorWithState Player -> String -> HrogueM ()
+processKey :: Player -> String -> HrogueM ()
 processKey a k =
   let move = moveActor $ a ^. Actor.actorId
   in case k of
