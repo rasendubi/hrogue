@@ -7,14 +7,14 @@ module Hrogue.Types.HrogueState
   , ActorId
   ) where
 
-import           Control.Lens          (Lens', at, (^.))
+import           Control.Lens (Lens', at, (^.))
 
-import           Data.Foldable         (find)
+import           Data.Foldable (find)
 
-import           Hrogue.Data.Point     (Point)
+import           Hrogue.Data.Point (Point)
 
-import           Hrogue.Types.Actor    (ActorId, AnyActor)
-import qualified Hrogue.Types.Actor    as Actor
+import           Hrogue.Types.Actor (ActorId, AnyActor)
+import qualified Hrogue.Types.Actor as Actor
 import           Hrogue.Types.Internal (HasHrogueState (..), HrogueState (..))
 
 actor :: ActorId -> Lens' HrogueState (Maybe AnyActor)

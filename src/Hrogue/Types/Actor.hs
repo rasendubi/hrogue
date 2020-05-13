@@ -4,5 +4,5 @@ module Hrogue.Types.Actor
   , AnyActor(..)
   ) where
 
-import           Hrogue.Types.Internal           (Actor (..), AnyActor (..))
+import           Hrogue.Types.Internal (Actor (..), AnyActor (..))
 import           Hrogue.Types.Internal.BaseActor

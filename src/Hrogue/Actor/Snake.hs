@@ -4,26 +4,23 @@ module Hrogue.Actor.Snake
   , mkSnake
   ) where
 
-import           Control.Lens             (use, uses, view, (&), (.=), (.~),
-                                           (^.))
-import           Control.Lens.TH          (makeClassy)
+import           Control.Lens (use, uses, view, (&), (.=), (.~), (^.))
+import           Control.Lens.TH (makeClassy)
 
-import           Control.Monad            (when)
+import           Control.Monad (when)
 
-import qualified Data.Text                as T
+import qualified Data.Text as T
 
-import qualified System.Random            as Random
+import qualified System.Random as Random
 
-import qualified Algorithm.Search         as S
+import qualified Algorithm.Search as S
 
-import qualified System.Console.ANSI      as ANSI
+import qualified System.Console.ANSI as ANSI
 
-import           Hrogue.Data.Level        (TerrainMap, isWalkable,
-                                           terrainMapCell)
-import           Hrogue.Data.Point        (Point (Point), directions,
-                                           pointMinus)
+import           Hrogue.Data.Level (TerrainMap, isWalkable, terrainMapCell)
+import           Hrogue.Data.Point (Point (Point), directions, pointMinus)
 
-import qualified Hrogue.Types.Actor       as Actor
+import qualified Hrogue.Types.Actor as Actor
 import qualified Hrogue.Types.HrogueState as HrogueState
 
 import           Hrogue.Control.HrogueM

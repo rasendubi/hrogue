@@ -6,13 +6,13 @@ module Hrogue.Terminal
   , goto
   ) where
 
-import           Control.Exception   (finally)
-import           System.IO           (BufferMode (NoBuffering), hReady,
-                                      hSetBuffering, hSetEcho, stdin, stdout)
+import           Control.Exception (finally)
+import           System.IO
+    (BufferMode (NoBuffering), hReady, hSetBuffering, hSetEcho, stdin, stdout)
 
 import qualified System.Console.ANSI as ANSI
 
-import           Hrogue.Data.Point   (Point (Point))
+import           Hrogue.Data.Point (Point (Point))
 
 clearScreen :: IO ()
 clearScreen = ANSI.clearScreen

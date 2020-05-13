@@ -13,24 +13,23 @@ module Hrogue.Control.HrogueM
   , actorAtPoint
   ) where
 
-import           Control.Lens               (at, use, (%=), (&), (.=), (.~),
-                                             (^.))
+import           Control.Lens (at, use, (%=), (&), (.=), (.~), (^.))
 
-import           Control.Monad              (when)
+import           Control.Monad (when)
 import           Control.Monad.State.Strict (gets)
 
-import qualified Data.Text                  as T
+import qualified Data.Text as T
 
-import           Hrogue.Data.Level          (isWalkable, terrainMapCell)
-import           Hrogue.Data.Point          (Point)
+import           Hrogue.Data.Level (isWalkable, terrainMapCell)
+import           Hrogue.Data.Point (Point)
 
-import           Hrogue.Terminal            as Terminal
+import           Hrogue.Terminal as Terminal
 
-import           Hrogue.Types.Actor         (ActorId(ActorId), AnyActor)
-import qualified Hrogue.Types.Actor         as Actor
-import           Hrogue.Types.HrogueState   (HrogueState)
-import qualified Hrogue.Types.HrogueState   as HrogueState
-import           Hrogue.Types.Internal      (HrogueM)
+import           Hrogue.Types.Actor (ActorId (ActorId), AnyActor)
+import qualified Hrogue.Types.Actor as Actor
+import           Hrogue.Types.HrogueState (HrogueState)
+import qualified Hrogue.Types.HrogueState as HrogueState
+import           Hrogue.Types.Internal (HrogueM)
 
 playerId :: ActorId
 playerId = ActorId 0

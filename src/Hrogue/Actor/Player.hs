@@ -1,17 +1,17 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Hrogue.Actor.Player (Player(Player)) where
 
-import           Control.Lens           ((^.))
-import           Control.Lens.TH        (makeClassy)
+import           Control.Lens ((^.))
+import           Control.Lens.TH (makeClassy)
 
 import           Control.Monad.IO.Class (liftIO)
 
 import           Hrogue.Control.HrogueM
-import           Hrogue.Data.Point      (down, left, right, up)
+import           Hrogue.Data.Point (down, left, right, up)
 
-import           Hrogue.Terminal        (getKey)
+import           Hrogue.Terminal (getKey)
 
-import qualified Hrogue.Types.Actor     as Actor
+import qualified Hrogue.Types.Actor as Actor
 
 data Player = Player
     { _baseActor :: Actor.BaseActor
