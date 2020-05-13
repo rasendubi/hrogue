@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 27e2ead1d09edca4aaf17e1895961b63e4b32e7ee72150bc13aa9312a32d2d99
+-- hash: 6f616d0178ecfad3b0db394f9c240e3514d155c0ad845aee511c41cc05e0f3ee
 
 name:           hrogue
 version:        0.1.0.0
@@ -28,14 +28,16 @@ source-repository head
 library
   exposed-modules:
       Hrogue
+      Hrogue.Actor.Player
+      Hrogue.Actor.Snake
       Hrogue.Control.HrogueM
-      Hrogue.Data.Actor
-      Hrogue.Data.Actor.Player
-      Hrogue.Data.Actor.Snake
-      Hrogue.Data.HrogueState
       Hrogue.Data.Level
       Hrogue.Data.Point
       Hrogue.Terminal
+      Hrogue.Types.Actor
+      Hrogue.Types.HrogueState
+      Hrogue.Types.Internal
+      Hrogue.Types.Internal.BaseActor
   other-modules:
       Paths_hrogue
   hs-source-dirs:

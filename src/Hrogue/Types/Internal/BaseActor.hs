@@ -1,9 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell       #-}
-module Hrogue.Data.Actor
-  ( Actor(..)
-  , ActorId(..)
+module Hrogue.Types.Internal.BaseActor
+  ( ActorId(..)
   , BaseActor(..)
   , HasBaseActor(..)
   ) where
@@ -15,9 +12,6 @@ import qualified Data.Text           as T
 import qualified System.Console.ANSI as ANSI
 
 import           Hrogue.Data.Point   (Point)
-
-class Actor action actor where
-  takeTurn :: actor -> action
 
 newtype ActorId = ActorId { unActorId :: Int }
   deriving (Eq, Ord, Show)

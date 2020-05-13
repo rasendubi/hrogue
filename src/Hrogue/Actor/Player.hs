@@ -1,7 +1,5 @@
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-module Hrogue.Data.Actor.Player (Player(Player)) where
+{-# LANGUAGE TemplateHaskell #-}
+module Hrogue.Actor.Player (Player(Player)) where
 
 import           Control.Lens           ((^.))
 import           Control.Lens.TH        (makeClassy)
@@ -9,10 +7,11 @@ import           Control.Lens.TH        (makeClassy)
 import           Control.Monad.IO.Class (liftIO)
 
 import           Hrogue.Control.HrogueM
-import qualified Hrogue.Data.Actor      as Actor
 import           Hrogue.Data.Point      (down, left, right, up)
 
 import           Hrogue.Terminal        (getKey)
+
+import qualified Hrogue.Types.Actor     as Actor
 
 data Player = Player
     { _baseActor :: Actor.BaseActor
@@ -24,7 +23,7 @@ makeClassy ''Player
 instance Actor.HasBaseActor Player where
   baseActor = baseActor
 
-instance Actor.Actor (HrogueM ()) Player where
+instance Actor.Actor Player where
   takeTurn = playerTurn
 
 playerTurn :: Player -> HrogueM ()

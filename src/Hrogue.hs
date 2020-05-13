@@ -15,16 +15,17 @@ import qualified System.Console.ANSI           as ANSI
 
 import qualified System.Random.Mersenne.Pure64 as MT
 
-import qualified Hrogue.Data.Actor             as Actor
-import qualified Hrogue.Data.HrogueState       as HrogueState
 import           Hrogue.Data.Level             (parseMap,
                                                 terrainMapStartPosition,
                                                 terrainMapToString)
 import           Hrogue.Data.Point             (Point (Point))
 import           Hrogue.Terminal               (goto, withTerminal)
 
-import           Hrogue.Data.Actor.Player      (Player (Player))
-import qualified Hrogue.Data.Actor.Snake       as Snake
+import qualified Hrogue.Types.Actor            as Actor
+import qualified Hrogue.Types.HrogueState      as HrogueState
+
+import           Hrogue.Actor.Player           as Player
+import qualified Hrogue.Actor.Snake            as Snake
 
 import           Hrogue.Control.HrogueM
 
@@ -35,7 +36,7 @@ snake actorId position = AnyActor $ Snake.mkSnake actorId position
 player :: ActorId -> Point -> AnyActor
 player actorId position =
   AnyActor $
-    Player $
+    Player.Player $
       Actor.BaseActor
         { Actor._actorId = actorId
         , Actor._name = T.pack "Player"

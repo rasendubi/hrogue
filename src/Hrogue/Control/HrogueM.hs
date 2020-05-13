@@ -1,8 +1,3 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-
 -- | Main monad of the game
 module Hrogue.Control.HrogueM
   ( HrogueM
@@ -18,36 +13,24 @@ module Hrogue.Control.HrogueM
   , actorAtPoint
   ) where
 
-import           Control.Lens               (at, lens, use, (%=), (&), (.=),
-                                             (.~), (^.))
+import           Control.Lens               (at, use, (%=), (&), (.=), (.~),
+                                             (^.))
 
 import           Control.Monad              (when)
-import           Control.Monad.State.Strict (StateT (..), gets)
+import           Control.Monad.State.Strict (gets)
 
 import qualified Data.Text                  as T
 
-import           Hrogue.Data.Actor          (ActorId (..))
-import qualified Hrogue.Data.Actor          as Actor
 import           Hrogue.Data.Level          (isWalkable, terrainMapCell)
 import           Hrogue.Data.Point          (Point)
 
-import           Hrogue.Data.HrogueState    (HrogueState)
-import qualified Hrogue.Data.HrogueState    as HrogueState
 import           Hrogue.Terminal            as Terminal
 
-type HrogueM = StateT (HrogueState AnyActor) IO
-
-data AnyActor = forall state .
-  (Actor.HasBaseActor state, Actor.Actor (HrogueM ()) state) =>
-  AnyActor state
-
-instance Actor.HasBaseActor AnyActor where
-  baseActor = lens
-    (\(AnyActor a) -> a ^. Actor.baseActor)
-    (\(AnyActor a) x -> AnyActor (a & Actor.baseActor .~ x))
-
-instance Actor.Actor (HrogueM ()) AnyActor where
-  takeTurn (AnyActor a) = Actor.takeTurn a
+import           Hrogue.Types.Actor         (ActorId(ActorId), AnyActor)
+import qualified Hrogue.Types.Actor         as Actor
+import           Hrogue.Types.HrogueState   (HrogueState)
+import qualified Hrogue.Types.HrogueState   as HrogueState
+import           Hrogue.Types.Internal      (HrogueM)
 
 playerId :: ActorId
 playerId = ActorId 0

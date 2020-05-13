@@ -1,35 +1,35 @@
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-module Hrogue.Data.Actor.Snake
+{-# LANGUAGE TemplateHaskell #-}
+module Hrogue.Actor.Snake
   ( Snake
   , mkSnake
   ) where
 
-import           Control.Lens            (use, uses, view, (&), (.=), (.~),
-                                          (^.))
-import           Control.Lens.TH         (makeClassy)
+import           Control.Lens             (use, uses, view, (&), (.=), (.~),
+                                           (^.))
+import           Control.Lens.TH          (makeClassy)
 
-import           Control.Monad           (when)
+import           Control.Monad            (when)
 
-import qualified Data.Text               as T
+import qualified Data.Text                as T
 
-import qualified System.Random           as Random
+import qualified System.Random            as Random
 
-import qualified Algorithm.Search        as S
+import qualified Algorithm.Search         as S
 
-import qualified System.Console.ANSI     as ANSI
+import qualified System.Console.ANSI      as ANSI
 
-import qualified Hrogue.Data.Actor       as Actor
-import qualified Hrogue.Data.HrogueState as HrogueState
-import           Hrogue.Data.Level       (TerrainMap, isWalkable,
-                                          terrainMapCell)
-import           Hrogue.Data.Point       (Point (Point), directions, pointMinus)
+import           Hrogue.Data.Level        (TerrainMap, isWalkable,
+                                           terrainMapCell)
+import           Hrogue.Data.Point        (Point (Point), directions,
+                                           pointMinus)
+
+import qualified Hrogue.Types.Actor       as Actor
+import qualified Hrogue.Types.HrogueState as HrogueState
 
 import           Hrogue.Control.HrogueM
 
 data Snake = Snake
-    { _baseActor      :: Actor.BaseActor
+    { _baseActor      :: !Actor.BaseActor
     , _haveSeenPlayer :: !Bool
     }
     deriving (Show)
@@ -55,7 +55,7 @@ makeClassy ''Snake
 
 instance Actor.HasBaseActor Snake where baseActor = baseActor
 
-instance Actor.Actor (HrogueM ()) Snake where
+instance Actor.Actor Snake where
   takeTurn = snakeTurn
 
 snakeTurn :: Snake -> HrogueM ()
