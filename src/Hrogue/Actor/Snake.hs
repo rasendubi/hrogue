@@ -4,10 +4,12 @@ module Hrogue.Actor.Snake
   , mkSnake
   ) where
 
-import           Control.Lens (use, uses, view, (&), (.=), (.~), (^.))
+import           Control.Lens (use, uses, view, (.=))
 import           Control.Lens.TH (makeClassy)
 
 import           Control.Monad (when)
+import           Control.Monad.State.Strict (StateT)
+import           Control.Monad.Trans (lift)
 
 import qualified Data.Text as T
 
@@ -55,18 +57,20 @@ instance Actor.HasBaseActor Snake where baseActor = baseActor
 instance Actor.Actor Snake where
   takeTurn = snakeTurn
 
-snakeTurn :: Snake -> HrogueM ()
-snakeTurn a = do
-  let actorId = a ^. Actor.actorId
-  let currentPos = a ^. Actor.position
-  terrain <- use HrogueState.terrainMap
-  Just player <- uses (HrogueState.actor playerId) (fmap $ view Actor.position)
+snakeTurn :: StateT Snake HrogueM ()
+snakeTurn = do
+  actorId <- use Actor.actorId
+  currentPos <- use Actor.position
+  terrain <- lift $ use HrogueState.terrainMap
+
+  Just player <- lift $ uses (HrogueState.actor playerId) (fmap $ view Actor.position)
 
   let visible = isVisible currentPos player terrain
-  when visible $
-    HrogueState.actor actorId .= Just (AnyActor (a & haveSeenPlayer .~ True))
+  when visible $ haveSeenPlayer .= True
 
-  if visible || a ^. haveSeenPlayer
+  seenPlayer <- use haveSeenPlayer
+
+  lift $ if visible || seenPlayer
     then
       sequence_ $
         searchPath currentPos player terrain >>= \(_price, path) ->
@@ -76,8 +80,8 @@ snakeTurn a = do
       let (r, rng') = Random.randomR (0, 8) rng
       HrogueState.rng .= rng'
       case r :: Int of
-        0 -> return ()
-        _ -> moveActor actorId $ directions !! (r - 1)
+        8 -> return ()
+        _ -> moveActor actorId $ directions !! r
 
 searchPath :: Point -> Point -> TerrainMap -> Maybe (Int, [Point])
 searchPath from to terrainMap = S.aStar (next `S.pruning` isWall) cost estimate (== to) from

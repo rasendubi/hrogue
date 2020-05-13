@@ -1,10 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Hrogue.Actor.Player (Player(Player)) where
 
-import           Control.Lens ((^.))
+import           Control.Lens (use)
 import           Control.Lens.TH (makeClassy)
 
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.State.Strict (StateT)
+import           Control.Monad.Trans (lift)
 
 import           Hrogue.Control.HrogueM
 import           Hrogue.Data.Point (down, left, right, up)
@@ -26,14 +28,15 @@ instance Actor.HasBaseActor Player where
 instance Actor.Actor Player where
   takeTurn = playerTurn
 
-playerTurn :: Player -> HrogueM ()
-playerTurn actor = do
+playerTurn :: StateT Player HrogueM ()
+playerTurn = do
+  actorId <- use Actor.actorId
   k <- liftIO getKey
-  processKey actor k
+  lift $ processKey actorId k
 
-processKey :: Player -> String -> HrogueM ()
-processKey a k =
-  let move = moveActor $ a ^. Actor.actorId
+processKey :: ActorId -> String -> HrogueM ()
+processKey actorId k =
+  let move = moveActor actorId
   in case k of
     "\ESC[A" -> move up
     "e"      -> move up

@@ -1,31 +1,30 @@
 module Hrogue (run) where
 
-import           Control.Lens                  (use, (.=), (^.))
+import           Control.Lens (use, (.=), (^.))
 
-import           Control.Monad                 (forM_, void)
-import           Control.Monad.IO.Class        (liftIO)
-import           Control.Monad.State.Strict    (StateT (..))
+import           Control.Monad (forM_, void)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.State.Strict (StateT (..))
 
-import qualified Data.Map.Strict               as Map
+import qualified Data.Map.Strict as Map
 
-import qualified Data.Text                     as T
-import qualified Data.Text.IO                  as T
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
-import qualified System.Console.ANSI           as ANSI
+import qualified System.Console.ANSI as ANSI
 
 import qualified System.Random.Mersenne.Pure64 as MT
 
-import           Hrogue.Data.Level             (parseMap,
-                                                terrainMapStartPosition,
-                                                terrainMapToString)
-import           Hrogue.Data.Point             (Point (Point))
-import           Hrogue.Terminal               (goto, withTerminal)
+import           Hrogue.Data.Level
+    (parseMap, terrainMapStartPosition, terrainMapToString)
+import           Hrogue.Data.Point (Point (Point))
+import           Hrogue.Terminal (goto, withTerminal)
 
-import qualified Hrogue.Types.Actor            as Actor
-import qualified Hrogue.Types.HrogueState      as HrogueState
+import qualified Hrogue.Types.Actor as Actor
+import qualified Hrogue.Types.HrogueState as HrogueState
 
-import           Hrogue.Actor.Player           as Player
-import qualified Hrogue.Actor.Snake            as Snake
+import           Hrogue.Actor.Player as Player
+import qualified Hrogue.Actor.Snake as Snake
 
 import           Hrogue.Control.HrogueM
 
@@ -83,8 +82,10 @@ tick = do
 -- move
 maybeTakeTurn :: ActorId -> HrogueM ()
 maybeTakeTurn actorId = do
-  actors <- use (HrogueState.actor actorId)
-  forM_ actors (Actor.takeTurn :: AnyActor -> HrogueM ())
+  mactor <- use (HrogueState.actor actorId)
+  forM_ mactor $ \actor -> do
+    (_r, actor') <- runStateT Actor.takeTurn actor
+    HrogueState.actor actorId .= Just actor'
 
 redraw :: HrogueM ()
 redraw = do

@@ -11,7 +11,8 @@ module Hrogue.Types.Internal
 import           Control.Lens (lens, (&), (.~), (^.))
 import           Control.Lens.TH (makeClassy)
 
-import           Control.Monad.State.Strict (StateT (..))
+import           Control.Monad.State.Strict (StateT (..), get, put, runStateT)
+import           Control.Monad.Trans (lift)
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -24,7 +25,7 @@ import qualified Hrogue.Types.Internal.BaseActor as BaseActor
 type HrogueM = StateT HrogueState IO
 
 class Actor actor where
-  takeTurn :: actor -> HrogueM ()
+  takeTurn :: StateT actor HrogueM ()
 
 data AnyActor = forall state . (BaseActor.HasBaseActor state, Actor state) =>
   AnyActor state
@@ -35,7 +36,11 @@ instance BaseActor.HasBaseActor AnyActor where
     (\(AnyActor a) x -> AnyActor (a & BaseActor.baseActor .~ x))
 
 instance Actor AnyActor where
-  takeTurn (AnyActor a) = takeTurn a
+  takeTurn = do
+    AnyActor a <- get
+    (r, a') <- lift $ runStateT takeTurn a
+    put $ AnyActor a'
+    return r
 
 data HrogueState = HrogueState
     { _terrainMap :: !TerrainMap
