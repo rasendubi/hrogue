@@ -28,7 +28,7 @@ data BaseActor = BaseActor
     , _position  :: !Point
     , _symbol    :: !Char
     , _sgr       :: ![ANSI.SGR]
-    , _hitpoints :: !Int
+    , _health    :: !Int
     }
     deriving (Show)
 

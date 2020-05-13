@@ -24,26 +24,13 @@ import           Hrogue.Data.Point             (Point (Point))
 import           Hrogue.Terminal               (goto, withTerminal)
 
 import           Hrogue.Data.Actor.Player      (Player (Player))
-import           Hrogue.Data.Actor.Snake       (Snake (Snake))
+import qualified Hrogue.Data.Actor.Snake       as Snake
 
 import           Hrogue.Control.HrogueM
 
 
 snake :: ActorId -> Point -> AnyActor
-snake actorId position =
-  AnyActor $
-    Snake $
-      Actor.BaseActor
-        { Actor._actorId = actorId
-        , Actor._name = T.pack "Snake"
-        , Actor._position = position
-        , Actor._symbol  = 's'
-        , Actor._sgr =
-          [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
-          , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
-          ]
-        , Actor._hitpoints = 30
-        }
+snake actorId position = AnyActor $ Snake.mkSnake actorId position
 
 player :: ActorId -> Point -> AnyActor
 player actorId position =
@@ -58,7 +45,7 @@ player actorId position =
             [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
             , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
             ]
-        , Actor._hitpoints = 100
+        , Actor._health = 100
         }
 
 run :: IO ()
@@ -135,4 +122,4 @@ statusLine = do
   mactor <- use $ HrogueState.actor playerId
   return $ case mactor of
     Nothing    -> T.empty
-    Just actor -> T.pack "HP:" <> T.pack (show $ actor ^. Actor.hitpoints)
+    Just actor -> T.pack "HP:" <> T.pack (show $ actor ^. Actor.health)

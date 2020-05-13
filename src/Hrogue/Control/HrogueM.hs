@@ -72,13 +72,13 @@ moveActor actorId pdiff = do
   case manotherActor of
     Just bActor -> do
       let bActorId = bActor ^. Actor.actorId
-      let nextHitpoints = bActor ^. Actor.hitpoints - 10
-      if nextHitpoints <= 0
+      let nextHealth = bActor ^. Actor.health - 10
+      if nextHealth <= 0
         then do
           HrogueState.actor bActorId .= Nothing
           setMessage $ bActor ^. Actor.name <> T.pack " is killed"
         else do
-          HrogueState.actor bActorId .= Just (bActor & Actor.hitpoints .~ nextHitpoints)
+          HrogueState.actor bActorId .= Just (bActor & Actor.health .~ nextHealth)
           when (actorId == playerId) $
             setMessage $ T.pack "You hit " <> bActor ^. Actor.name
           when (bActorId == playerId) $
