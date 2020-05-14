@@ -1,6 +1,6 @@
 module Hrogue (run) where
 
-import           Control.Lens (use, (.=), (^.))
+import           Control.Lens (use, (.=), (^.), (&))
 
 import           Control.Monad (forM_, void)
 import           Control.Monad.IO.Class (liftIO)
@@ -22,6 +22,8 @@ import           Hrogue.Terminal (goto, withTerminal)
 
 import qualified Hrogue.Types.Actor as Actor
 import qualified Hrogue.Types.HrogueState as HrogueState
+
+import qualified Hrogue.Types.Action as Action
 
 import           Hrogue.Actor.Player as Player
 import qualified Hrogue.Actor.Snake as Snake
@@ -84,8 +86,9 @@ maybeTakeTurn :: ActorId -> HrogueM ()
 maybeTakeTurn actorId = do
   mactor <- use (HrogueState.actor actorId)
   forM_ mactor $ \actor -> do
-    (_r, actor') <- runStateT Actor.takeTurn actor
+    (action, actor') <- runStateT Actor.takeTurn actor
     HrogueState.actor actorId .= Just actor'
+    actor' & action ^. Action.run
 
 redraw :: HrogueM ()
 redraw = do

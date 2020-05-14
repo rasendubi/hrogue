@@ -6,6 +6,8 @@ module Hrogue.Types.Internal
   , HrogueM
   , Actor(..)
   , AnyActor(..)
+  , Action(..)
+  , HasAction(..)
   ) where
 
 import           Control.Lens (lens, (&), (.~), (^.))
@@ -24,8 +26,13 @@ import qualified Hrogue.Types.Internal.BaseActor as BaseActor
 
 type HrogueM = StateT HrogueState IO
 
+data Action = Action
+  { _run :: !(AnyActor -> HrogueM ())
+  , _cost :: !Int
+  }
+
 class Actor actor where
-  takeTurn :: StateT actor HrogueM ()
+  takeTurn :: StateT actor HrogueM Action
 
 data AnyActor = forall state . (BaseActor.HasBaseActor state, Actor state) =>
   AnyActor state
@@ -51,3 +58,4 @@ data HrogueState = HrogueState
     }
 
 makeClassy ''HrogueState
+makeClassy ''Action

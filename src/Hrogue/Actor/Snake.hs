@@ -4,26 +4,31 @@ module Hrogue.Actor.Snake
   , mkSnake
   ) where
 
-import           Control.Lens (use, uses, view, (.=))
-import           Control.Lens.TH (makeClassy)
+import qualified Algorithm.Search as S
+
+import           Data.Maybe (fromMaybe)
+
+import qualified Data.Text as T
 
 import           Control.Monad (when)
 import           Control.Monad.State.Strict (StateT)
 import           Control.Monad.Trans (lift)
 
-import qualified Data.Text as T
-
-import qualified System.Random as Random
-
-import qualified Algorithm.Search as S
+import           Control.Lens (use, uses, view, (.=))
+import           Control.Lens.TH (makeClassy)
 
 import qualified System.Console.ANSI as ANSI
+import qualified System.Random as Random
 
 import           Hrogue.Data.Level (TerrainMap, isWalkable, terrainMapCell)
 import           Hrogue.Data.Point (Point (Point), directions, pointMinus)
 
+import qualified Hrogue.Types.Action as Action
 import qualified Hrogue.Types.Actor as Actor
 import qualified Hrogue.Types.HrogueState as HrogueState
+
+import           Hrogue.Action.MoveAttack (moveAttack)
+import           Hrogue.Action.Wait (wait)
 
 import           Hrogue.Control.HrogueM
 
@@ -57,9 +62,8 @@ instance Actor.HasBaseActor Snake where baseActor = baseActor
 instance Actor.Actor Snake where
   takeTurn = snakeTurn
 
-snakeTurn :: StateT Snake HrogueM ()
+snakeTurn :: StateT Snake HrogueM Action.Action
 snakeTurn = do
-  actorId <- use Actor.actorId
   currentPos <- use Actor.position
   terrain <- lift $ use HrogueState.terrainMap
 
@@ -72,16 +76,16 @@ snakeTurn = do
 
   lift $ if visible || seenPlayer
     then
-      sequence_ $
+      return $ fromMaybe wait $
         searchPath currentPos player terrain >>= \(_price, path) ->
-          return $ moveActor actorId (head path `pointMinus` currentPos)
+          return $ moveAttack (head path `pointMinus` currentPos)
     else do
       rng <- use HrogueState.rng
       let (r, rng') = Random.randomR (0, 8) rng
       HrogueState.rng .= rng'
-      case r :: Int of
-        8 -> return ()
-        _ -> moveActor actorId $ directions !! r
+      return $ case r :: Int of
+        8 -> wait
+        _ -> moveAttack $ directions !! r
 
 searchPath :: Point -> Point -> TerrainMap -> Maybe (Int, [Point])
 searchPath from to terrainMap = S.aStar (next `S.pruning` isWall) cost estimate (== to) from
