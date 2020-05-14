@@ -51,6 +51,8 @@ mkSnake actorId position = Snake
           , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
           ]
         , Actor._health = 30
+        , Actor._energy = 0
+        , Actor._speed = 15
         }
   , _haveSeenPlayer = False
   }

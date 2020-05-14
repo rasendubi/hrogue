@@ -23,6 +23,8 @@ data BaseActor = BaseActor
     , _symbol   :: !Char
     , _sgr      :: ![ANSI.SGR]
     , _health   :: !Int
+    , _energy   :: !Int
+    , _speed    :: !Int
     }
     deriving (Show)
 

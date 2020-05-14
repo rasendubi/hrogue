@@ -1,8 +1,9 @@
 module Hrogue (run) where
 
-import           Control.Lens (use, (.=), (^.), (&))
+import           Control.Lens
+    (Lens', singular, use, (&), (-=), (.=), (<+=), (^.), _Just)
 
-import           Control.Monad (forM_, void)
+import           Control.Monad (forM_, void, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Strict (StateT (..))
 
@@ -48,6 +49,8 @@ player actorId position =
             , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
             ]
         , Actor._health = 100
+        , Actor._energy = 0
+        , Actor._speed = 25
         }
 
 run :: IO ()
@@ -84,11 +87,20 @@ tick = do
 -- move
 maybeTakeTurn :: ActorId -> HrogueM ()
 maybeTakeTurn actorId = do
+
   mactor <- use (HrogueState.actor actorId)
   forM_ mactor $ \actor -> do
-    (action, actor') <- runStateT Actor.takeTurn actor
-    HrogueState.actor actorId .= Just actor'
-    actor' & action ^. Action.run
+    let
+      energy :: Lens' HrogueState Int
+      energy = HrogueState.actor actorId . singular _Just . Actor.energy
+
+    energy' <- energy <+= actor ^. Actor.speed
+
+    when (energy' > 0) $ do
+      (action, actor') <- runStateT Actor.takeTurn actor
+      HrogueState.actor actorId .= Just actor'
+      actor' & action ^. Action.run
+      energy -= action ^. Action.cost
 
 redraw :: HrogueM ()
 redraw = do
