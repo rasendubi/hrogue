@@ -6,11 +6,11 @@ module Hrogue.Control.HrogueM
   , AnyActor(AnyActor)
   , playerId
   , setMessage
-  , displayActor
   , moveActor
   , modifyActor
   , deleteActor
   , actorAtPoint
+  , actorToText
   ) where
 
 import           Control.Lens (at, use, (%=), (&), (.=), (.~), (^.))
@@ -37,9 +37,9 @@ playerId = ActorId 0
 setMessage :: T.Text -> HrogueM ()
 setMessage m = HrogueState.message .= Just m
 
-displayActor :: Actor.HasBaseActor actor => actor -> IO ()
-displayActor a =
-  Terminal.putSymbol (a ^. Actor.position) (a ^. Actor.sgr) (a ^. Actor.symbol)
+actorToText :: Actor.HasBaseActor actor => actor -> T.Text
+actorToText a =
+  Terminal.symbolText (a ^. Actor.sgr) (a ^. Actor.symbol)
 
 moveActor :: ActorId -> Point -> HrogueM ()
 moveActor actorId pdiff = do

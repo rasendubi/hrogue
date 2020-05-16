@@ -1,6 +1,7 @@
 module Hrogue.Terminal
   ( clearScreen
   , withTerminal
+  , symbolText
   , putSymbol
   , getKey
   , goto
@@ -9,6 +10,8 @@ module Hrogue.Terminal
 import           Control.Exception (finally)
 import           System.IO
     (BufferMode (NoBuffering), hReady, hSetBuffering, hSetEcho, stdin, stdout)
+
+import qualified Data.Text as T
 
 import qualified System.Console.ANSI as ANSI
 
@@ -42,6 +45,13 @@ putSymbol p sgr c = do
   goto p
   ANSI.setSGR sgr
   putChar c
+
+symbolText :: [ANSI.SGR] -> Char -> T.Text
+symbolText sgr c = T.concat
+  [ T.pack (ANSI.setSGRCode sgr)
+  , T.singleton c
+  , T.pack (ANSI.setSGRCode [])
+  ]
 
 -- | Read key press from the stdin.
 --

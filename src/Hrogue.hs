@@ -12,12 +12,14 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
+import qualified Data.Vector as V
+
 import qualified System.Console.ANSI as ANSI
 
 import qualified System.Random.Mersenne.Pure64 as MT
 
 import           Hrogue.Data.Level
-    (parseMap, terrainMapStartPosition, terrainMapToString)
+    (isVisible, parseMap, renderTerrain, terrainMapStartPosition)
 import           Hrogue.Data.Point (Point (Point))
 import           Hrogue.Terminal (goto, withTerminal)
 
@@ -31,6 +33,8 @@ import qualified Hrogue.Actor.Snake as Snake
 
 import           Hrogue.Control.HrogueM
 
+withVisibility :: Bool
+withVisibility = False
 
 snake :: ActorId -> Point -> AnyActor
 snake actorId position = AnyActor $ Snake.mkSnake actorId position
@@ -107,19 +111,33 @@ redraw = do
   level <- use HrogueState.terrainMap
   actors <- use HrogueState.actors
   mmessage <- use HrogueState.message
+  currentPos <- use $ HrogueState.actor playerId . _Just . Actor.position
 
   HrogueState.message .= Nothing
 
   status <- statusLine
 
+  let
+    terrain = renderTerrain level
+
+    actorsMap = Map.fromList $ map (\a -> (a ^. Actor.position, a)) (Map.elems actors)
+
+    visible :: (Int, Int) -> Bool
+    visible (x, y) = isVisible currentPos (Point x y) level
+
+    ifor = flip V.imap
+    finalMap = ifor terrain $ \y row -> ifor row $ \x cell ->
+      if not withVisibility || visible (x, y)
+      then maybe (T.singleton cell) actorToText (Map.lookup (Point x y) actorsMap)
+      else T.singleton ' '
+
+    finalText = T.intercalate (T.singleton '\n') . V.toList . V.map (T.concat . V.toList) $ finalMap
+
   liftIO $ do
     -- draw map
     goto (Point 0 0)
     ANSI.setSGR []
-    T.putStr (terrainMapToString level)
-
-    -- draw actors
-    forM_ (Map.elems actors) displayActor
+    T.putStr finalText
 
     -- display message
     goto (Point 0 0)
@@ -132,7 +150,6 @@ redraw = do
     ANSI.setSGR []
     T.putStr status
     ANSI.clearFromCursorToLineEnd
-
 
 statusLine :: HrogueM T.Text
 statusLine = do
