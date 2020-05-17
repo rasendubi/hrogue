@@ -10,7 +10,6 @@ module Hrogue.Control.HrogueM
   , modifyActor
   , deleteActor
   , actorAtPoint
-  , actorToText
   ) where
 
 import           Control.Lens (at, use, (%=), (&), (.=), (.~), (^.))
@@ -23,8 +22,6 @@ import qualified Data.Text as T
 import           Hrogue.Data.Level (isWalkable, terrainMapCell)
 import           Hrogue.Data.Point (Point)
 
-import           Hrogue.Terminal as Terminal
-
 import           Hrogue.Types.Actor (ActorId (ActorId), AnyActor)
 import qualified Hrogue.Types.Actor as Actor
 import           Hrogue.Types.HrogueState (HrogueState)
@@ -36,10 +33,6 @@ playerId = ActorId 0
 
 setMessage :: T.Text -> HrogueM ()
 setMessage m = HrogueState.message .= Just m
-
-actorToText :: Actor.HasBaseActor actor => actor -> T.Text
-actorToText a =
-  Terminal.symbolText (a ^. Actor.sgr) (a ^. Actor.symbol)
 
 moveActor :: ActorId -> Point -> HrogueM ()
 moveActor actorId pdiff = do

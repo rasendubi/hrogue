@@ -17,12 +17,12 @@ import           Control.Monad.Trans (lift)
 import           Control.Lens (use, uses, view, (.=))
 import           Control.Lens.TH (makeClassy)
 
-import qualified System.Console.ANSI as ANSI
 import qualified System.Random as Random
 
 import           Hrogue.Data.Level
     (TerrainMap, isVisible, isWalkable, terrainMapCell)
 import           Hrogue.Data.Point (Point (Point), directions, pointMinus)
+import qualified Hrogue.Data.Symbol as Symbol
 
 import qualified Hrogue.Types.Action as Action
 import qualified Hrogue.Types.Actor as Actor
@@ -46,11 +46,7 @@ mkSnake actorId position = Snake
         { Actor._actorId = actorId
         , Actor._name = T.pack "Snake"
         , Actor._position = position
-        , Actor._symbol = 's'
-        , Actor._sgr =
-          [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
-          , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Green
-          ]
+        , Actor._symbol = Symbol.withForeground (Symbol.rgb 0 5 0) $ Symbol.symbol 's'
         , Actor._health = 30
         , Actor._energy = 0
         , Actor._speed = 15

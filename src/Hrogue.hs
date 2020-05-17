@@ -12,16 +12,12 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import qualified Data.Vector as V
-
-import qualified System.Console.ANSI as ANSI
-
 import qualified System.Random.Mersenne.Pure64 as MT
 
-import           Hrogue.Data.Level
-    (isVisible, parseMap, renderTerrain, terrainMapStartPosition)
+import           Hrogue.Data.Level (parseMap, terrainMapStartPosition)
 import           Hrogue.Data.Point (Point (Point))
-import           Hrogue.Terminal (goto, withTerminal)
+
+import           Hrogue.Terminal (withTerminal)
 
 import qualified Hrogue.Types.Actor as Actor
 import qualified Hrogue.Types.HrogueState as HrogueState
@@ -33,29 +29,11 @@ import qualified Hrogue.Actor.Snake as Snake
 
 import           Hrogue.Control.HrogueM
 
-withVisibility :: Bool
-withVisibility = False
-
 snake :: ActorId -> Point -> AnyActor
 snake actorId position = AnyActor $ Snake.mkSnake actorId position
 
 player :: ActorId -> Point -> AnyActor
-player actorId position =
-  AnyActor $
-    Player.Player $
-      Actor.BaseActor
-        { Actor._actorId = actorId
-        , Actor._name = T.pack "Player"
-        , Actor._position = position
-        , Actor._symbol = '@'
-        , Actor._sgr =
-            [ ANSI.SetConsoleIntensity ANSI.BoldIntensity
-            , ANSI.SetColor ANSI.Foreground ANSI.Vivid ANSI.Cyan
-            ]
-        , Actor._health = 100
-        , Actor._energy = 0
-        , Actor._speed = 25
-        }
+player actorId position = AnyActor $ Player.mkPlayer actorId position
 
 run :: IO ()
 run = withTerminal $ do
@@ -77,10 +55,7 @@ run = withTerminal $ do
   void $ runStateT game initialState
 
 game :: HrogueM ()
-game = do
-  redraw
-  tick
-  game
+game = tick >> game
 
 tick :: HrogueM ()
 tick = do
@@ -105,55 +80,3 @@ maybeTakeTurn actorId = do
       HrogueState.actor actorId .= Just actor'
       actor' & action ^. Action.run
       energy -= action ^. Action.cost
-
-redraw :: HrogueM ()
-redraw = do
-  level <- use HrogueState.terrainMap
-  actors <- use HrogueState.actors
-  mmessage <- use HrogueState.message
-  currentPos <- use $ HrogueState.actor playerId . _Just . Actor.position
-
-  HrogueState.message .= Nothing
-
-  status <- statusLine
-
-  let
-    terrain = renderTerrain level
-
-    actorsMap = Map.fromList $ map (\a -> (a ^. Actor.position, a)) (Map.elems actors)
-
-    visible :: (Int, Int) -> Bool
-    visible (x, y) = isVisible currentPos (Point x y) level
-
-    ifor = flip V.imap
-    finalMap = ifor terrain $ \y row -> ifor row $ \x cell ->
-      if not withVisibility || visible (x, y)
-      then maybe (T.singleton cell) actorToText (Map.lookup (Point x y) actorsMap)
-      else T.singleton ' '
-
-    finalText = T.intercalate (T.singleton '\n') . V.toList . V.map (T.concat . V.toList) $ finalMap
-
-  liftIO $ do
-    -- draw map
-    goto (Point 0 0)
-    ANSI.setSGR []
-    T.putStr finalText
-
-    -- display message
-    goto (Point 0 0)
-    ANSI.setSGR []
-    forM_ mmessage T.putStr
-    ANSI.clearFromCursorToLineEnd
-
-    -- display status bar
-    goto (Point 0 24)
-    ANSI.setSGR []
-    T.putStr status
-    ANSI.clearFromCursorToLineEnd
-
-statusLine :: HrogueM T.Text
-statusLine = do
-  mactor <- use $ HrogueState.actor playerId
-  return $ case mactor of
-    Nothing    -> T.empty
-    Just actor -> T.pack "HP:" <> T.pack (show $ actor ^. Actor.health)

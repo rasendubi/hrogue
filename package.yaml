@@ -21,16 +21,16 @@ description:         Please see the README on GitHub at <https://github.com/rase
 
 dependencies:
 - base >= 4.7 && < 5
-- containers
-- vector
-- bytestring
-- text
-- lens
 - ansi-terminal
+- bytestring
+- containers
+- lens
+- mersenne-random-pure64
 - mtl
 - random
-- mersenne-random-pure64
 - search-algorithms
+- text
+- vector
 
 library:
   source-dirs: src

@@ -16,9 +16,11 @@ import           Data.Vector (Vector)
 import qualified Data.Vector as V
 
 import           Hrogue.Data.Point (Point (Point))
+import qualified Hrogue.Data.Symbol as Symbol
 
 data TerrainCell
-    = Floor
+    = Empty
+    | Floor
     | Corridor
     | Wall
     deriving (Eq, Show)
@@ -48,18 +50,20 @@ isWalkable Corridor = True
 isWalkable _        = False
 
 charToTerrainCell :: Char -> TerrainCell
+charToTerrainCell ' ' = Empty
 charToTerrainCell '.' = Floor
 charToTerrainCell '<' = Floor
 charToTerrainCell '#' = Corridor
-charToTerrainCell ' ' = Wall
+charToTerrainCell '_' = Wall
 charToTerrainCell _   = undefined
 
-terrainCellToChar :: TerrainCell -> Char
-terrainCellToChar Floor    = '.'
-terrainCellToChar Corridor = '#'
-terrainCellToChar Wall     = ' '
+terrainCellToChar :: TerrainCell -> Symbol.Symbol
+terrainCellToChar Empty    = Symbol.symbol ' '
+terrainCellToChar Floor    = Symbol.symbol '.'
+terrainCellToChar Corridor = Symbol.symbol '#'
+terrainCellToChar Wall     = Symbol.withForeground (Symbol.rgb 1 1 1) $ Symbol.symbol '\x2588'
 
-renderTerrain :: TerrainMap -> V.Vector (V.Vector Char)
+renderTerrain :: TerrainMap -> V.Vector (V.Vector Symbol.Symbol)
 renderTerrain TerrainMap{ unTerrainMap = m } =
   V.map (V.map terrainCellToChar) m
 

@@ -1,8 +1,6 @@
 module Hrogue.Terminal
   ( clearScreen
   , withTerminal
-  , symbolText
-  , putSymbol
   , getKey
   , goto
   ) where
@@ -10,8 +8,6 @@ module Hrogue.Terminal
 import           Control.Exception (finally)
 import           System.IO
     (BufferMode (NoBuffering), hReady, hSetBuffering, hSetEcho, stdin, stdout)
-
-import qualified Data.Text as T
 
 import qualified System.Console.ANSI as ANSI
 
@@ -39,19 +35,6 @@ withTerminal f = finally (prepareTerminal >> f) restoreTerminal
 
 goto :: Point -> IO ()
 goto (Point x y) = ANSI.setCursorPosition y x
-
-putSymbol :: Point -> [ANSI.SGR] -> Char -> IO ()
-putSymbol p sgr c = do
-  goto p
-  ANSI.setSGR sgr
-  putChar c
-
-symbolText :: [ANSI.SGR] -> Char -> T.Text
-symbolText sgr c = T.concat
-  [ T.pack (ANSI.setSGRCode sgr)
-  , T.singleton c
-  , T.pack (ANSI.setSGRCode [])
-  ]
 
 -- | Read key press from the stdin.
 --
