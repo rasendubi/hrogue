@@ -1,6 +1,6 @@
 module Hrogue.Redraw (redraw) where
 
-import           Control.Lens (at, use, (^.), _Just, (<<.=))
+import           Control.Lens (use, (<<.=), (^.))
 
 import           Data.Maybe (fromMaybe)
 
@@ -18,7 +18,8 @@ import           Control.Monad.IO.Class (liftIO)
 
 import qualified System.Console.ANSI as ANSI
 
-import           Hrogue.Data.Level (TerrainMap, isVisible, renderTerrain)
+import           Hrogue.Data.Level
+    (TerrainCell (..), TerrainMap, cellToSymbol, unTerrainMap)
 import           Hrogue.Data.Point (Point (Point))
 import qualified Hrogue.Data.Symbol as Symbol
 
@@ -30,11 +31,8 @@ import           Hrogue.Terminal (goto)
 import           Hrogue.Control.HrogueM
 
 
-withVisibility :: Bool
-withVisibility = False
-
-redraw :: HrogueM ()
-redraw = do
+redraw :: V.Vector (V.Vector Bool) -> V.Vector (V.Vector Bool) -> HrogueM ()
+redraw knownMap visibilityMap = do
   level <- use HrogueState.terrainMap
   actors <- use HrogueState.actors
 
@@ -46,7 +44,7 @@ redraw = do
     -- draw map
     goto (Point 0 1)
     ANSI.setSGR []
-    TL.putStr $ renderMap level actors
+    TL.putStr $ renderMap level actors knownMap visibilityMap
 
     -- display message
     goto (Point 0 0)
@@ -60,25 +58,26 @@ redraw = do
     T.putStr status
     ANSI.clearFromCursorToLineEnd
 
-renderMap :: TerrainMap -> Map.Map ActorId AnyActor -> TL.Text
-renderMap level actors = finalText
+renderMap :: TerrainMap -> Map.Map ActorId AnyActor -> V.Vector (V.Vector Bool) -> V.Vector (V.Vector Bool) -> TL.Text
+renderMap level actors knownMap visibilityMap = finalText
   where
-    currentPos = actors ^. at playerId . _Just . Actor.position
-
-    terrain = renderTerrain level
+    terrain = unTerrainMap level
 
     actorsMap = Map.fromList $ map (\a -> (a ^. Actor.position, a ^. Actor.symbol)) (Map.elems actors)
 
-    visible :: (Int, Int) -> Bool
-    visible (x, y) = isVisible currentPos (Point x y) level
+    finalMap = V.izipWith3 (\y -> V.izipWith3 $ \x km v t -> renderCell km v (x, y) t) knownMap visibilityMap terrain
 
-    ifor = flip V.imap
-    finalMap = ifor terrain $ \y row -> ifor row $ \x cell ->
-      if not withVisibility || visible (x, y)
-      then Symbol.toText $ fromMaybe cell (Map.lookup (Point x y) actorsMap)
-      else TL.singleton ' '
+    renderCell :: Bool -> Bool -> (Int, Int) -> TerrainCell -> Symbol.Symbol
+    -- not known
+    renderCell False _ _ _ = Symbol.symbol ' '
+    -- not visible
+    renderCell True  False _ cell = Symbol.withForeground (Symbol.rgb 1 1 1) $ cellToSymbol cell
+    -- visible
+    renderCell True  True  (x, y) cell = fromMaybe (cellToSymbol cell) (Map.lookup (Point x y) actorsMap)
 
-    finalText = TL.intercalate (TL.singleton '\n') . V.toList . V.map (TL.concat . V.toList) $ finalMap
+    finalText =
+      TL.intercalate (TL.singleton '\n') $
+        V.toList $ V.map (TL.concat . fmap Symbol.toText . V.toList) finalMap
 
 statusLine :: HrogueM T.Text
 statusLine = do

@@ -14,7 +14,8 @@ import qualified Data.Text.IO as T
 
 import qualified System.Random.Mersenne.Pure64 as MT
 
-import           Hrogue.Data.Level (parseMap, terrainMapStartPosition)
+import           Hrogue.Data.Level
+    (parseMap, terrainMapSize, terrainMapStartPosition)
 import           Hrogue.Data.Point (Point (Point))
 
 import           Hrogue.Terminal (withTerminal)
@@ -32,14 +33,15 @@ import           Hrogue.Control.HrogueM
 snake :: ActorId -> Point -> AnyActor
 snake actorId position = AnyActor $ Snake.mkSnake actorId position
 
-player :: ActorId -> Point -> AnyActor
-player actorId position = AnyActor $ Player.mkPlayer actorId position
+player :: ActorId -> Point -> (Int, Int) -> AnyActor
+player actorId position sizes = AnyActor $ Player.mkPlayer actorId position sizes
 
 run :: IO ()
 run = withTerminal $ do
   level <- parseMap <$> T.readFile "data/level.txt"
+  let sizes = terrainMapSize level
   let actorList =
-        [ player playerId (terrainMapStartPosition level)
+        [ player playerId (terrainMapStartPosition level) sizes
         , snake (ActorId 1) (Point 77 9)
         , snake (ActorId 2) (Point 14 10)
         ]

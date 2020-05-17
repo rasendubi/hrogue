@@ -1,13 +1,14 @@
 module Hrogue.Data.Level
   ( TerrainMap
   , terrainMapCell
+  , unTerrainMap
   , terrainMapStartPosition
   , TerrainCell(..)
   , parseMap
   , isWalkable
   , isVisible
-  , renderTerrain
   , terrainMapSize
+  , cellToSymbol
   ) where
 
 import           Data.Text (Text)
@@ -57,15 +58,11 @@ charToTerrainCell '#' = Corridor
 charToTerrainCell '_' = Wall
 charToTerrainCell _   = undefined
 
-terrainCellToChar :: TerrainCell -> Symbol.Symbol
-terrainCellToChar Empty    = Symbol.symbol ' '
-terrainCellToChar Floor    = Symbol.symbol '.'
-terrainCellToChar Corridor = Symbol.symbol '#'
-terrainCellToChar Wall     = Symbol.withForeground (Symbol.rgb 1 1 1) $ Symbol.symbol '\x2588'
-
-renderTerrain :: TerrainMap -> V.Vector (V.Vector Symbol.Symbol)
-renderTerrain TerrainMap{ unTerrainMap = m } =
-  V.map (V.map terrainCellToChar) m
+cellToSymbol :: TerrainCell -> Symbol.Symbol
+cellToSymbol Empty    = Symbol.symbol ' '
+cellToSymbol Floor    = Symbol.symbol '.'
+cellToSymbol Corridor = Symbol.symbol '#'
+cellToSymbol Wall     = Symbol.withForeground (Symbol.rgb 1 1 1) $ Symbol.symbol '\x2588'
 
 isVisible :: Point -> Point -> TerrainMap -> Bool
 isVisible (Point x1 y1) (Point x2 y2) terrain = all transparent los
