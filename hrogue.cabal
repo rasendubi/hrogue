@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b14cf4a5815aa189a0a29e125e46f914486a565eea1d7aff3a08990bc2ed3299
+-- hash: b6146b6ef920f833c1d4ee086e509127a45c1b78ac09e10b99a3965cca67f856
 
 name:           hrogue
 version:        0.1.0.0
@@ -36,6 +36,7 @@ library
       Hrogue.Data.Level
       Hrogue.Data.Point
       Hrogue.Data.Symbol
+      Hrogue.LevelGen
       Hrogue.Redraw
       Hrogue.Terminal
       Hrogue.Types.Action
@@ -49,7 +50,8 @@ library
       src
   ghc-options: -Wall
   build-depends:
-      ansi-terminal
+      MonadRandom
+    , ansi-terminal
     , base >=4.7 && <5
     , bytestring
     , containers
@@ -70,7 +72,8 @@ executable hrogue-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      ansi-terminal
+      MonadRandom
+    , ansi-terminal
     , base >=4.7 && <5
     , bytestring
     , containers
@@ -93,7 +96,8 @@ test-suite hrogue-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      ansi-terminal
+      MonadRandom
+    , ansi-terminal
     , base >=4.7 && <5
     , bytestring
     , containers

@@ -30,6 +30,8 @@ import           Hrogue.Terminal (goto)
 
 import           Hrogue.Control.HrogueM
 
+withVisibility :: Bool
+withVisibility = True
 
 redraw :: V.Vector (V.Vector Bool) -> V.Vector (V.Vector Bool) -> HrogueM ()
 redraw knownMap visibilityMap = do
@@ -69,11 +71,11 @@ renderMap level actors knownMap visibilityMap = finalText
 
     renderCell :: Bool -> Bool -> (Int, Int) -> TerrainCell -> Symbol.Symbol
     -- not known
-    renderCell False _ _ _ = Symbol.symbol ' '
+    renderCell False _ _ _ | withVisibility = Symbol.symbol ' '
     -- not visible
-    renderCell True  False _ cell = Symbol.withForeground (Symbol.rgb 1 1 1) $ cellToSymbol cell
+    renderCell _ False _ cell | withVisibility = Symbol.withForeground (Symbol.rgb 1 1 1) $ cellToSymbol cell
     -- visible
-    renderCell True  True  (x, y) cell = fromMaybe (cellToSymbol cell) (Map.lookup (Point x y) actorsMap)
+    renderCell _ _ (x, y) cell = fromMaybe (cellToSymbol cell) (Map.lookup (Point x y) actorsMap)
 
     finalText =
       TL.intercalate (TL.singleton '\n') $

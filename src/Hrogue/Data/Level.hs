@@ -1,8 +1,6 @@
 module Hrogue.Data.Level
-  ( TerrainMap
+  ( TerrainMap(..)
   , terrainMapCell
-  , unTerrainMap
-  , terrainMapStartPosition
   , TerrainCell(..)
   , parseMap
   , isWalkable

@@ -10,12 +10,10 @@ import           Control.Monad.State.Strict (StateT (..))
 import qualified Data.Map.Strict as Map
 
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 
 import qualified System.Random.Mersenne.Pure64 as MT
 
-import           Hrogue.Data.Level
-    (parseMap, terrainMapSize, terrainMapStartPosition)
+import           Hrogue.Data.Level (terrainMapSize, terrainMapStartPosition)
 import           Hrogue.Data.Point (Point (Point))
 
 import           Hrogue.Terminal (withTerminal)
@@ -28,6 +26,8 @@ import qualified Hrogue.Types.Action as Action
 import           Hrogue.Actor.Player as Player
 import qualified Hrogue.Actor.Snake as Snake
 
+import           Hrogue.LevelGen (generateLevel)
+
 import           Hrogue.Control.HrogueM
 
 snake :: ActorId -> Point -> AnyActor
@@ -38,20 +38,20 @@ player actorId position sizes = AnyActor $ Player.mkPlayer actorId position size
 
 run :: IO ()
 run = withTerminal $ do
-  level <- parseMap <$> T.readFile "data/level.txt"
+  rng <- liftIO MT.newPureMT
+  let (level, rng') = generateLevel (80, 24) rng
   let sizes = terrainMapSize level
   let actorList =
         [ player playerId (terrainMapStartPosition level) sizes
-        , snake (ActorId 1) (Point 77 9)
-        , snake (ActorId 2) (Point 14 10)
+        -- , snake (ActorId 1) (Point 77 9)
+        -- , snake (ActorId 2) (Point 14 10)
         ]
   let actors = Map.fromList $ fmap (\a -> (a ^. Actor.actorId, a)) actorList
-  rng <- liftIO MT.newPureMT
   let initialState = HrogueState
         { HrogueState._terrainMap = level
         , HrogueState._actors = actors
         , HrogueState._nextId = ActorId 3
-        , HrogueState._rng = rng
+        , HrogueState._rng = rng'
         , HrogueState._message = Just $ T.pack "Welcome to hrogue!"
         }
   void $ runStateT game initialState

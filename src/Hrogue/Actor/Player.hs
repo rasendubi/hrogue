@@ -4,7 +4,7 @@ module Hrogue.Actor.Player
   , mkPlayer
   ) where
 
-import           Control.Lens (uses, (<%=), (^.))
+import           Control.Lens (use, uses, (.=), (<%=), (^.))
 import           Control.Lens.TH (makeClassy)
 
 import           Control.Monad (when)
@@ -28,9 +28,12 @@ import qualified Hrogue.Types.Action as Action
 import qualified Hrogue.Types.Actor as Actor
 import qualified Hrogue.Types.HrogueState as HrogueState
 
-import           Hrogue.Data.Level (TerrainMap, isVisible, terrainMapSize)
+import           Hrogue.Data.Level
+    (TerrainMap, isVisible, terrainMapSize, terrainMapStartPosition)
 import           Hrogue.Data.Point (Point (Point), down, left, right, up)
 import qualified Hrogue.Data.Symbol as Symbol
+
+import           Hrogue.LevelGen (generateLevel)
 
 import           Hrogue.Redraw (redraw)
 
@@ -93,6 +96,7 @@ processKey k =
     "f"      -> moveAttack (up   <> right)
     "v"      -> moveAttack (down <> left)
     "k"      -> moveAttack (down <> right)
+    "r"      -> regenerateMap
     _        -> wait
 
 actorVisibilityMap :: Actor.HasBaseActor actor => actor -> HrogueM (V.Vector (V.Vector Bool))
@@ -105,3 +109,12 @@ visibilityMap p terrain = V.generate sizeY $ \y -> V.generate sizeX $ \x -> visi
   where
     (sizeX, sizeY) = terrainMapSize terrain
     visible x y = isVisible p (Point x y) terrain
+
+regenerateMap :: Action.Action
+regenerateMap = Action.mkAction 100 $ \_actor -> do
+  let size = (80, 24)
+  rng <- use HrogueState.rng
+  let (level, rng') = generateLevel size rng
+  HrogueState.rng .= rng'
+  HrogueState.terrainMap .= level
+  HrogueState.actor playerId .= Just (Actor.AnyActor $ mkPlayer playerId (terrainMapStartPosition level) size)
