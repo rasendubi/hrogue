@@ -55,7 +55,7 @@ redraw knownMap visibilityMap = do
     ANSI.clearFromCursorToLineEnd
 
     -- display status bar
-    goto (Point 0 24)
+    goto (Point 0 25)
     ANSI.setSGR []
     T.putStr status
     ANSI.clearFromCursorToLineEnd

@@ -67,18 +67,24 @@ generateLevel' (sizeX, sizeY) = do
 
     tryPlaceCorridor = do
       rooms <- lift $ readSTRef rooms'
-      room <- Random.uniform rooms
+      corridors <- lift $ readSTRef corridors'
+      room <- Random.uniform $ rooms ++ corridors
       wall <- randomRoomWall room
 
       corridorLength <- Random.getRandomR (1, 5)
       let
-        corridorScanRect = transposeRect wall ((0, -1), (corridorLength + 1, 1)) -- looks to right
-        corridorFillRect = transposeRect wall ((0, 0),  (corridorLength, 0))
+        scanRect = transposeRect wall ((0, -1), (corridorLength + 1, 1)) -- looks to right
+        fillRect = transposeRect wall ((1, 0),  (corridorLength, 0))
 
-      free <- lift $ scan corridorScanRect
+      free <- lift $ scan scanRect
       when free $ lift $ do
-        pushCorridor corridorFillRect
-        fill corridorFillRect Level.Corridor
+        pushCorridor fillRect
+        fill fillRect Level.Corridor
+        -- Set entry to the same cell as room it branches off. So the
+        -- entry cell is floor if branching from room, or corridor if
+        -- branching from corridor.
+        fillingCell <- get (fst room)
+        set fillingCell (snd wall)
 
 
     tryPlaceRoom = do
