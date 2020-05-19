@@ -54,7 +54,7 @@ run = withTerminal $ do
         , HrogueState._rng = rng'
         , HrogueState._message = Just $ T.pack "Welcome to hrogue!"
         }
-  void $ runStateT game initialState
+  void $ runHrogueM game initialState
 
 game :: HrogueM ()
 game = tick >> game

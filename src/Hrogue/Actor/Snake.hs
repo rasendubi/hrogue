@@ -14,7 +14,7 @@ import           Control.Monad (when)
 import           Control.Monad.State.Strict (StateT)
 import           Control.Monad.Trans (lift)
 
-import           Control.Lens (use, uses, view, (.=))
+import           Control.Lens (use, (.=), _Just)
 import           Control.Lens.TH (makeClassy)
 
 import qualified System.Random as Random
@@ -66,7 +66,7 @@ snakeTurn = do
   currentPos <- use Actor.position
   terrain <- lift $ use HrogueState.terrainMap
 
-  Just player <- lift $ uses (HrogueState.actor playerId) (fmap $ view Actor.position)
+  player <- lift $ use $ HrogueState.actor playerId . _Just . Actor.position
 
   let visible = isVisible currentPos player terrain
   when visible $ haveSeenPlayer .= True
