@@ -1,11 +1,13 @@
 module Hrogue (run) where
 
-import           Control.Lens
-    (Lens', singular, use, (&), (-=), (.=), (<+=), (^.), _Just)
+import           Polysemy (embed)
+import           Polysemy.State (get)
+
+import           Control.Lens (Lens', singular, (&), (^.), _Just)
+import           Control.Lens.Polysemy (use, (-=), (.=), (<+=))
 
 import           Control.Monad (forM_, void, when)
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.State.Strict (StateT (..))
 
 import qualified Data.Map.Strict as Map
 
@@ -78,7 +80,8 @@ maybeTakeTurn actorId = do
     energy' <- energy <+= actor ^. Actor.speed
 
     when (energy' > 0) $ do
-      (action, actor') <- runStateT Actor.takeTurn actor
+      state <- get @HrogueState
+      (actor', action) <- embed $ Actor.runActorM actor state Actor.takeTurn
       HrogueState.actor actorId .= Just actor'
       actor' & action ^. Action.run
       energy -= action ^. Action.cost

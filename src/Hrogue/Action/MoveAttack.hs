@@ -4,7 +4,8 @@ module Hrogue.Action.MoveAttack
 
 import           Control.Monad (when)
 
-import           Control.Lens (use, (&), (.=), (.~), (^.), _Just)
+import           Control.Lens ((&), (.~), (^.), _Just)
+import           Control.Lens.Polysemy (use, (.=))
 
 import qualified Data.Text as T
 

@@ -4,6 +4,9 @@ module Hrogue.Actor.Snake
   , mkSnake
   ) where
 
+import           Polysemy (Member, Sem)
+import           Polysemy.State (State)
+
 import qualified Algorithm.Search as S
 
 import           Data.Maybe (fromMaybe)
@@ -11,10 +14,9 @@ import           Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 
 import           Control.Monad (when)
-import           Control.Monad.State.Strict (StateT)
-import           Control.Monad.Trans (lift)
 
-import           Control.Lens (use, (.=), _Just)
+import           Control.Lens (_Just)
+import           Control.Lens.Polysemy (assign, use, (.=))
 import           Control.Lens.TH (makeClassy)
 
 import qualified System.Random as Random
@@ -61,19 +63,19 @@ instance Actor.HasBaseActor Snake where baseActor = baseActor
 instance Actor.Actor Snake where
   takeTurn = snakeTurn
 
-snakeTurn :: StateT Snake HrogueM Action.Action
+snakeTurn :: (Member (State Snake) r, Member (State HrogueState.HrogueState) r) => Sem r Action.Action
 snakeTurn = do
-  currentPos <- use Actor.position
-  terrain <- lift $ use HrogueState.terrainMap
+  currentPos <- use @Snake Actor.position
+  terrain <- use HrogueState.terrainMap
 
-  player <- lift $ use $ HrogueState.actor playerId . _Just . Actor.position
+  player <- use $ HrogueState.actor playerId . _Just . Actor.position
 
   let visible = isVisible currentPos player terrain
-  when visible $ haveSeenPlayer .= True
+  when visible $ assign @Snake haveSeenPlayer True
 
-  seenPlayer <- use haveSeenPlayer
+  seenPlayer <- use @Snake haveSeenPlayer
 
-  lift $ if visible || seenPlayer
+  if visible || seenPlayer
     then
       return $ fromMaybe wait $
         searchPath currentPos player terrain >>= \(_price, path) ->

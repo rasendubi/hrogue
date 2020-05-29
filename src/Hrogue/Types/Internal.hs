@@ -3,22 +3,29 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Hrogue.Types.Internal
   ( HrogueState(..)
-  , HasHrogueState(..)
+  , terrainMap
+  , actors
+  , nextId
+  , message
+  , rng
+
   , HrogueM
   , runHrogueM
+
   , Actor(..)
+  , ActorM
+  , runActorM
+
   , AnyActor(..)
   , Action(..)
   , HasAction(..)
   ) where
 
-import           Control.Lens (lens, (&), (.~), (^.))
-import           Control.Lens.TH (makeClassy)
+import           Polysemy (Embed, Sem, embed, runM)
+import qualified Polysemy.State as State
 
-import           Control.Monad.IO.Class (MonadIO)
-import           Control.Monad.State.Strict
-    (MonadState, StateT (..), get, put, runStateT)
-import           Control.Monad.Trans (lift)
+import           Control.Lens (lens, (&), (.~), (^.))
+import           Control.Lens.TH (makeClassy, makeLenses)
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -28,19 +35,26 @@ import qualified System.Random.Mersenne.Pure64 as MT
 import           Hrogue.Data.Level (TerrainMap)
 import qualified Hrogue.Types.Internal.BaseActor as BaseActor
 
-newtype HrogueM a = HrogueM { unHrogueM :: StateT HrogueState IO a }
-  deriving (Functor, Applicative, Monad, MonadState HrogueState, MonadIO)
+-- newtype HrogueM a = HrogueM { unHrogueM :: StateT HrogueState IO a }
+--   deriving (Functor, Applicative, Monad, MonadState HrogueState, MonadIO)
 
-runHrogueM :: HrogueM a -> HrogueState -> IO (a, HrogueState)
-runHrogueM (HrogueM m) s = runStateT m s
+type HrogueM a = Sem '[State.State HrogueState, Embed IO] a
+
+runHrogueM :: HrogueM a -> HrogueState -> IO (HrogueState, a)
+runHrogueM m s = runM . State.runState s $ m
 
 data Action = Action
   { _run  :: !(AnyActor -> HrogueM ())
   , _cost :: !Int
   }
 
+type ActorM actor a = Sem '[State.State actor, State.State HrogueState, Embed IO] a
+
+runActorM :: actor -> HrogueState -> ActorM actor a -> IO (actor, a)
+runActorM actor state = runM . State.evalState state . State.runState actor
+
 class Actor actor where
-  takeTurn :: StateT actor HrogueM Action
+  takeTurn :: ActorM actor Action
 
 data AnyActor = forall state . (BaseActor.HasBaseActor state, Actor state) =>
   AnyActor state
@@ -52,9 +66,10 @@ instance BaseActor.HasBaseActor AnyActor where
 
 instance Actor AnyActor where
   takeTurn = do
-    AnyActor a <- get
-    (r, a') <- lift $ runStateT takeTurn a
-    put $ AnyActor a'
+    AnyActor a <- State.get
+    state <- State.get @HrogueState
+    (a', r) <- embed $ runActorM a state takeTurn
+    State.put $ AnyActor a'
     return r
 
 data HrogueState = HrogueState
@@ -65,5 +80,6 @@ data HrogueState = HrogueState
     , _rng        :: !MT.PureMT
     }
 
-makeClassy ''HrogueState
+-- HrogueState does not need to be polymorphic
+makeLenses ''HrogueState
 makeClassy ''Action

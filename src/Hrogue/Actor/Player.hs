@@ -4,12 +4,14 @@ module Hrogue.Actor.Player
   , mkPlayer
   ) where
 
-import           Control.Lens (use, uses, (.=), (<%=), (^.))
-import           Control.Lens.TH (makeClassy)
+import           Polysemy (Embed, Member, Sem, embed)
+import           Polysemy.State (State, get)
+
+import           Control.Lens ((^.))
+import           Control.Lens.Polysemy (use, uses, (.=), (<%=))
+import           Control.Lens.TH (makeLenses)
 
 import           Control.Monad (when)
-import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.State.Strict (StateT, get, lift)
 
 import qualified Data.Text as T
 
@@ -58,7 +60,7 @@ mkPlayer actorId position (sizeX, sizeY) = Player
   , _knownMap = V.replicate sizeY $ V.replicate sizeX False
   }
 
-makeClassy ''Player
+makeLenses ''Player
 
 instance Actor.HasBaseActor Player where
   baseActor = baseActor
@@ -66,16 +68,16 @@ instance Actor.HasBaseActor Player where
 instance Actor.Actor Player where
   takeTurn = playerTurn
 
-playerTurn :: StateT Player HrogueM Action.Action
+playerTurn :: (Member (State Player) r, Member (State HrogueState) r, Member (Embed IO) r) => Sem r Action.Action
 playerTurn = do
-  p <- get
-  v <- lift $ actorVisibilityMap p
+  p <- get @Player
+  v <- actorVisibilityMap p
   km <- knownMap <%= V.zipWith (V.zipWith (||)) v
-  lift $ redraw km v
+  redraw km v
 
-  k <- liftIO getKey
-  liftIO $ logKey k
-  liftIO $ when (k == "q") exitSuccess
+  k <- embed getKey
+  embed $ logKey k
+  embed $ when (k == "q") exitSuccess
   return $ processKey k
 
 logKey :: String -> IO ()
@@ -99,7 +101,7 @@ processKey k =
     "r"      -> regenerateMap
     _        -> wait
 
-actorVisibilityMap :: Actor.HasBaseActor actor => actor -> HrogueM (V.Vector (V.Vector Bool))
+actorVisibilityMap :: (Member (State HrogueState) r, Actor.HasBaseActor actor) => actor -> Sem r (V.Vector (V.Vector Bool))
 actorVisibilityMap actor = do
   let pos = actor ^. Actor.position
   uses HrogueState.terrainMap (visibilityMap pos)

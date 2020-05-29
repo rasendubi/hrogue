@@ -13,10 +13,12 @@ module Hrogue.Control.HrogueM
   , actorAtPoint
   ) where
 
-import           Control.Lens (at, use, (%=), (&), (.=), (.~), (^.))
+import           Polysemy (Member, Sem)
+import           Polysemy.State (State, get, gets, modify')
 
-import           Control.Monad (when, forM_)
-import           Control.Monad.State.Strict (gets)
+import           Control.Lens (at, view, (%~), (&), (.~), (^.))
+
+import           Control.Monad (forM_, when)
 
 import qualified Data.Text as T
 
@@ -32,13 +34,13 @@ import           Hrogue.Types.Internal (HrogueM, runHrogueM)
 playerId :: ActorId
 playerId = ActorId 0
 
-setMessage :: T.Text -> HrogueM ()
-setMessage m = HrogueState.message .= Just m
+setMessage :: (Member (State HrogueState) r) => T.Text -> Sem r ()
+setMessage m = modify' @HrogueState $ HrogueState.message .~ Just m
 
-moveActor :: ActorId -> Point -> HrogueM ()
+moveActor :: (Member (State HrogueState) r) => ActorId -> Point -> Sem r ()
 moveActor actorId pdiff = do
-  terrain <- use HrogueState.terrainMap
-  mactor <- use $ HrogueState.actor actorId
+  terrain <- view HrogueState.terrainMap <$> get
+  mactor <- view (HrogueState.actor actorId) <$> get
   forM_ mactor $ \actor -> do
     let prev = actor ^. Actor.position
     let next = prev <> pdiff
@@ -52,10 +54,10 @@ moveActor actorId pdiff = do
         let nextHealth = bActor ^. Actor.health - 10
         if nextHealth <= 0
           then do
-            HrogueState.actor bActorId .= Nothing
+            modify' @HrogueState $ HrogueState.actor bActorId .~ Nothing
             setMessage $ bActor ^. Actor.name <> T.pack " is killed"
           else do
-            HrogueState.actor bActorId .= Just (bActor & Actor.health .~ nextHealth)
+            modify' @HrogueState $ HrogueState.actor bActorId .~ Just (bActor & Actor.health .~ nextHealth)
             when (actorId == playerId) $
               setMessage $ T.pack "You hit " <> bActor ^. Actor.name
             when (bActorId == playerId) $
@@ -64,11 +66,11 @@ moveActor actorId pdiff = do
         when (isWalkable cell) $
           modifyActor actorId $ \a -> a & Actor.position .~ next
 
-modifyActor :: ActorId -> (AnyActor -> AnyActor) -> HrogueM ()
-modifyActor actorId f = HrogueState.actor actorId %= fmap f
+modifyActor :: (Member (State HrogueState) r) => ActorId -> (AnyActor -> AnyActor) -> Sem r ()
+modifyActor actorId f = modify' $ HrogueState.actor actorId %~ fmap f
 
-deleteActor :: ActorId -> HrogueM ()
-deleteActor actorId = HrogueState.actors . at actorId .= Nothing
+deleteActor :: (Member (State HrogueState) r) => ActorId -> Sem r ()
+deleteActor actorId = modify' $ HrogueState.actors . at actorId .~ Nothing
 
-actorAtPoint :: Point -> HrogueM (Maybe AnyActor)
+actorAtPoint :: (Member (State HrogueState) r) => Point -> Sem r (Maybe AnyActor)
 actorAtPoint = gets . HrogueState.actorAtPoint

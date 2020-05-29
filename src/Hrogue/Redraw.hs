@@ -1,6 +1,10 @@
 module Hrogue.Redraw (redraw) where
 
-import           Control.Lens (use, (<<.=), (^.))
+import           Polysemy (Embed, Member, Sem)
+import           Polysemy.State (State)
+
+import           Control.Lens ((^.))
+import           Control.Lens.Polysemy (use, (<<.=))
 
 import           Data.Maybe (fromMaybe)
 
@@ -33,7 +37,7 @@ import           Hrogue.Control.HrogueM
 withVisibility :: Bool
 withVisibility = True
 
-redraw :: V.Vector (V.Vector Bool) -> V.Vector (V.Vector Bool) -> HrogueM ()
+redraw :: (Member (State HrogueState.HrogueState) r, Member (Embed IO) r) => V.Vector (V.Vector Bool) -> V.Vector (V.Vector Bool) -> Sem r ()
 redraw knownMap visibilityMap = do
   level <- use HrogueState.terrainMap
   actors <- use HrogueState.actors
@@ -81,7 +85,7 @@ renderMap level actors knownMap visibilityMap = finalText
       TL.intercalate (TL.singleton '\n') $
         V.toList $ V.map (TL.concat . fmap Symbol.toText . V.toList) finalMap
 
-statusLine :: HrogueM T.Text
+statusLine :: (Member (State HrogueState.HrogueState) r) => Sem r T.Text
 statusLine = do
   mactor <- use $ HrogueState.actor playerId
   return $ case mactor of
