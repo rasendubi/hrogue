@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -7,21 +8,22 @@ module Hrogue.Types.Internal
   , actors
   , nextId
   , message
-  , rng
 
   , HrogueM
   , runHrogueM
 
   , Actor(..)
   , ActorM
-  , runActorM
+  , withActor
 
   , AnyActor(..)
   , Action(..)
   , HasAction(..)
   ) where
 
-import           Polysemy (Embed, Sem, embed, runM)
+import           Polysemy (Embed, Members, Sem, raise, runM)
+import           Polysemy.RandomFu (RandomFu)
+import           Polysemy.RandomFu.State (PureMT, runRandomWithState)
 import qualified Polysemy.State as State
 
 import           Control.Lens (lens, (&), (.~), (^.))
@@ -30,28 +32,40 @@ import           Control.Lens.TH (makeClassy, makeLenses)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 
-import qualified System.Random.Mersenne.Pure64 as MT
-
 import           Hrogue.Data.Level (TerrainMap)
 import qualified Hrogue.Types.Internal.BaseActor as BaseActor
 
--- newtype HrogueM a = HrogueM { unHrogueM :: StateT HrogueState IO a }
---   deriving (Functor, Applicative, Monad, MonadState HrogueState, MonadIO)
+type HrogueM a = Sem '[State.State HrogueState, RandomFu, State.State PureMT, Embed IO] a
 
-type HrogueM a = Sem '[State.State HrogueState, Embed IO] a
+type HasHrogueM r = Members
+  [ State.State HrogueState
+  , RandomFu
+  , State.State PureMT
+  , Embed IO
+  ]
+  r
 
-runHrogueM :: HrogueM a -> HrogueState -> IO (HrogueState, a)
-runHrogueM m s = runM . State.runState s $ m
+runHrogueM :: PureMT -> HrogueState -> HrogueM a -> IO (PureMT, (HrogueState, a))
+runHrogueM g s = runM . State.runState g . runRandomWithState . State.runState s
 
 data Action = Action
   { _run  :: !(AnyActor -> HrogueM ())
   , _cost :: !Int
   }
 
-type ActorM actor a = Sem '[State.State actor, State.State HrogueState, Embed IO] a
+type ActorM actor a = Sem '[State.State actor, State.State HrogueState, RandomFu, State.State PureMT, Embed IO] a
 
-runActorM :: actor -> HrogueState -> ActorM actor a -> IO (actor, a)
-runActorM actor state = runM . State.evalState state . State.runState actor
+type HasActorM actor r = Members
+  [ State.State actor
+  , State.State HrogueState
+  , RandomFu
+  , State.State PureMT
+  , Embed IO
+  ]
+  r
+
+withActor :: (HasHrogueM r) => actor -> Sem (State.State actor ': r) a -> Sem r (actor, a)
+withActor actor = State.runState actor
 
 class Actor actor where
   takeTurn :: ActorM actor Action
@@ -67,8 +81,7 @@ instance BaseActor.HasBaseActor AnyActor where
 instance Actor AnyActor where
   takeTurn = do
     AnyActor a <- State.get
-    state <- State.get @HrogueState
-    (a', r) <- embed $ runActorM a state takeTurn
+    (a', r) <- raise $ withActor a takeTurn
     State.put $ AnyActor a'
     return r
 
@@ -77,7 +90,7 @@ data HrogueState = HrogueState
     , _actors     :: !(Map.Map BaseActor.ActorId AnyActor)
     , _nextId     :: !BaseActor.ActorId
     , _message    :: !(Maybe T.Text)
-    , _rng        :: !MT.PureMT
+    -- , _rng        :: !MT.PureMT
     }
 
 -- HrogueState does not need to be polymorphic

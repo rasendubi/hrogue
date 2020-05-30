@@ -4,10 +4,13 @@ module Hrogue.Actor.Snake
   , mkSnake
   ) where
 
-import           Polysemy (Member, Sem)
+import           Polysemy (Members, Sem)
+import qualified Polysemy.RandomFu as Random
 import           Polysemy.State (State)
 
 import qualified Algorithm.Search as S
+
+import           Data.Random.Distribution.Uniform (uniform)
 
 import           Data.Maybe (fromMaybe)
 
@@ -16,10 +19,8 @@ import qualified Data.Text as T
 import           Control.Monad (when)
 
 import           Control.Lens (_Just)
-import           Control.Lens.Polysemy (assign, use, (.=))
+import           Control.Lens.Polysemy (assign, use)
 import           Control.Lens.TH (makeClassy)
-
-import qualified System.Random as Random
 
 import           Hrogue.Data.Level
     (TerrainMap, isVisible, isWalkable, terrainMapCell)
@@ -63,7 +64,7 @@ instance Actor.HasBaseActor Snake where baseActor = baseActor
 instance Actor.Actor Snake where
   takeTurn = snakeTurn
 
-snakeTurn :: (Member (State Snake) r, Member (State HrogueState.HrogueState) r) => Sem r Action.Action
+snakeTurn :: (Members [State Snake, State HrogueState.HrogueState, Random.RandomFu] r) => Sem r Action.Action
 snakeTurn = do
   currentPos <- use @Snake Actor.position
   terrain <- use HrogueState.terrainMap
@@ -81,9 +82,7 @@ snakeTurn = do
         searchPath currentPos player terrain >>= \(_price, path) ->
           return $ moveAttack (head path `pointMinus` currentPos)
     else do
-      rng <- use HrogueState.rng
-      let (r, rng') = Random.randomR (0, 8) rng
-      HrogueState.rng .= rng'
+      r <- Random.sampleRVar $ uniform 0 8
       return $ case r :: Int of
         8 -> wait
         _ -> moveAttack $ directions !! r

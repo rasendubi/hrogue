@@ -5,10 +5,11 @@ module Hrogue.Actor.Player
   ) where
 
 import           Polysemy (Embed, Member, Sem, embed)
-import           Polysemy.State (State, get)
+import           Polysemy.RandomFu.State (PureMT)
+import           Polysemy.State (State, get, put)
 
 import           Control.Lens ((^.))
-import           Control.Lens.Polysemy (use, uses, (.=), (<%=))
+import           Control.Lens.Polysemy (uses, (.=), (<%=))
 import           Control.Lens.TH (makeLenses)
 
 import           Control.Monad (when)
@@ -115,8 +116,11 @@ visibilityMap p terrain = V.generate sizeY $ \y -> V.generate sizeX $ \x -> visi
 regenerateMap :: Action.Action
 regenerateMap = Action.mkAction 100 $ \_actor -> do
   let size = (80, 24)
-  rng <- use HrogueState.rng
+
+  -- TODO: use RandomFu instead of State directly
+  rng <- get @PureMT
   let (level, rng') = generateLevel size rng
-  HrogueState.rng .= rng'
+  put rng'
+
   HrogueState.terrainMap .= level
   HrogueState.actor playerId .= Just (Actor.AnyActor $ mkPlayer playerId (terrainMapStartPosition level) size)

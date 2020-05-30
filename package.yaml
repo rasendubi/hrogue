@@ -29,7 +29,11 @@ dependencies:
 - mersenne-random-pure64
 - mtl
 - polysemy
+- polysemy-RandomFu
+- polysemy-zoo
 - random
+- random-fu
+- random-source
 - search-algorithms
 - text
 - vector

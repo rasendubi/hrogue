@@ -1,8 +1,5 @@
 module Hrogue (run) where
 
-import           Polysemy (embed)
-import           Polysemy.State (get)
-
 import           Control.Lens (Lens', singular, (&), (^.), _Just)
 import           Control.Lens.Polysemy (use, (-=), (.=), (<+=))
 
@@ -53,10 +50,9 @@ run = withTerminal $ do
         { HrogueState._terrainMap = level
         , HrogueState._actors = actors
         , HrogueState._nextId = ActorId 3
-        , HrogueState._rng = rng'
         , HrogueState._message = Just $ T.pack "Welcome to hrogue!"
         }
-  void $ runHrogueM game initialState
+  void $ runHrogueM rng' initialState game
 
 game :: HrogueM ()
 game = tick >> game
@@ -80,8 +76,7 @@ maybeTakeTurn actorId = do
     energy' <- energy <+= actor ^. Actor.speed
 
     when (energy' > 0) $ do
-      state <- get @HrogueState
-      (actor', action) <- embed $ Actor.runActorM actor state Actor.takeTurn
+      (actor', action) <- Actor.withActor actor Actor.takeTurn
       HrogueState.actor actorId .= Just actor'
       actor' & action ^. Action.run
       energy -= action ^. Action.cost

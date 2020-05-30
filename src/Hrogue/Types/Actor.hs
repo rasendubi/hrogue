@@ -3,9 +3,9 @@ module Hrogue.Types.Actor
   , Actor(..)
   , AnyActor(..)
   , ActorM
-  , runActorM
+  , withActor
   ) where
 
 import           Hrogue.Types.Internal
-    (Actor (..), ActorM, AnyActor (..), runActorM)
+    (Actor (..), ActorM, AnyActor (..), withActor)
 import           Hrogue.Types.Internal.BaseActor

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 385e59e360797bfaf6272335d4d9b55ba1a97c7338593cf6684b4cdcf9ba3585
+-- hash: ca33babc7a7e788d6c2b4e0c35b89a94630c69b9545a79f1f1c8445d2ae2699c
 
 name:           hrogue
 version:        0.1.0.0
@@ -45,6 +45,7 @@ library
       Hrogue.Types.HrogueState
       Hrogue.Types.Internal
       Hrogue.Types.Internal.BaseActor
+      Polysemy.RandomFu.State
   other-modules:
       Paths_hrogue
   hs-source-dirs:
@@ -61,7 +62,11 @@ library
     , mersenne-random-pure64
     , mtl
     , polysemy
+    , polysemy-RandomFu
+    , polysemy-zoo
     , random
+    , random-fu
+    , random-source
     , search-algorithms
     , text
     , vector
@@ -86,7 +91,11 @@ executable hrogue-exe
     , mersenne-random-pure64
     , mtl
     , polysemy
+    , polysemy-RandomFu
+    , polysemy-zoo
     , random
+    , random-fu
+    , random-source
     , search-algorithms
     , text
     , vector
@@ -112,7 +121,11 @@ test-suite hrogue-test
     , mersenne-random-pure64
     , mtl
     , polysemy
+    , polysemy-RandomFu
+    , polysemy-zoo
     , random
+    , random-fu
+    , random-source
     , search-algorithms
     , text
     , vector
