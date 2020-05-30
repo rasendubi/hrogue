@@ -28,6 +28,7 @@ import qualified Hrogue.Actor.Snake as Snake
 import           Hrogue.LevelGen (generateLevel)
 
 import           Hrogue.Control.HrogueM
+import           Hrogue.Types.Internal (HrogueM)
 
 snake :: ActorId -> Point -> AnyActor
 snake actorId position = AnyActor $ Snake.mkSnake actorId position
@@ -49,7 +50,6 @@ run = withTerminal $ do
   let initialState = HrogueState
         { HrogueState._terrainMap = level
         , HrogueState._actors = actors
-        , HrogueState._nextId = ActorId 3
         , HrogueState._message = Just $ T.pack "Welcome to hrogue!"
         }
   void $ runHrogueM rng' initialState game

@@ -3,7 +3,6 @@ module Hrogue.Types.HrogueState
   ( HrogueState(..)
   , terrainMap
   , actors
-  , nextId
   , message
 
   , actor
@@ -20,7 +19,7 @@ import           Hrogue.Data.Point (Point)
 import           Hrogue.Types.Actor (ActorId, AnyActor)
 import qualified Hrogue.Types.Actor as Actor
 import           Hrogue.Types.Internal
-    (HrogueState (..), actors, message, nextId, terrainMap)
+    (HrogueState (..), actors, message, terrainMap)
 
 actor :: ActorId -> Lens' HrogueState (Maybe AnyActor)
 actor idx = actors . at idx

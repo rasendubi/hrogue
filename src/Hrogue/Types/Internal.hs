@@ -6,10 +6,10 @@ module Hrogue.Types.Internal
   ( HrogueState(..)
   , terrainMap
   , actors
-  , nextId
   , message
 
   , HrogueM
+  , HrogueE
   , runHrogueM
 
   , Actor(..)
@@ -19,6 +19,7 @@ module Hrogue.Types.Internal
   , AnyActor(..)
   , Action(..)
   , HasAction(..)
+  , mkAction
   ) where
 
 import           Polysemy (Embed, Members, Sem, raise, runM)
@@ -35,15 +36,26 @@ import qualified Data.Text as T
 import           Hrogue.Data.Level (TerrainMap)
 import qualified Hrogue.Types.Internal.BaseActor as BaseActor
 
-type HrogueM a = Sem '[State.State HrogueState, RandomFu, State.State PureMT, Embed IO] a
-
-type HasHrogueM r = Members
+type HrogueE =
   [ State.State HrogueState
   , RandomFu
   , State.State PureMT
   , Embed IO
   ]
-  r
+type ActorE actor =
+  [ State.State actor
+  , State.State HrogueState
+  , RandomFu
+  , State.State PureMT
+  , Embed IO
+  ]
+
+-- | HrogueM is a concrete Sem monad used to run Hrogue game.
+--
+-- It is here, so we are able to embed it into Action. Otherwise, you
+-- should never use it directly, but specify all necessary constraints
+-- with 'Members'.
+type HrogueM a = Sem HrogueE a
 
 runHrogueM :: PureMT -> HrogueState -> HrogueM a -> IO (PureMT, (HrogueState, a))
 runHrogueM g s = runM . State.runState g . runRandomWithState . State.runState s
@@ -53,18 +65,17 @@ data Action = Action
   , _cost :: !Int
   }
 
-type ActorM actor a = Sem '[State.State actor, State.State HrogueState, RandomFu, State.State PureMT, Embed IO] a
+mkAction :: Int -> (AnyActor -> HrogueM ()) -> Action
+mkAction cost' run' = Action run' cost'
 
-type HasActorM actor r = Members
-  [ State.State actor
-  , State.State HrogueState
-  , RandomFu
-  , State.State PureMT
-  , Embed IO
-  ]
-  r
+-- | HrogueM is a concrete Sem monad used to execute Actor AIs.
+--
+-- It is here, so we are able to define Actor typeclass without
+-- MultiParamTypeClasses. Otherwise, you should never use it directly,
+-- but specify all necessary constraints with 'Members'.
+type ActorM actor a = Sem (ActorE actor) a
 
-withActor :: (HasHrogueM r) => actor -> Sem (State.State actor ': r) a -> Sem r (actor, a)
+withActor :: (Members HrogueE r) => actor -> Sem (State.State actor ': r) a -> Sem r (actor, a)
 withActor actor = State.runState actor
 
 class Actor actor where
@@ -88,9 +99,7 @@ instance Actor AnyActor where
 data HrogueState = HrogueState
     { _terrainMap :: !TerrainMap
     , _actors     :: !(Map.Map BaseActor.ActorId AnyActor)
-    , _nextId     :: !BaseActor.ActorId
     , _message    :: !(Maybe T.Text)
-    -- , _rng        :: !MT.PureMT
     }
 
 -- HrogueState does not need to be polymorphic

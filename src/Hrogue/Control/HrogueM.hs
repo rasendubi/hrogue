@@ -1,6 +1,6 @@
 -- | Main monad of the game
 module Hrogue.Control.HrogueM
-  ( HrogueM
+  ( HrogueE
   , runHrogueM
   , HrogueState(HrogueState)
   , ActorId(..)
@@ -29,7 +29,7 @@ import           Hrogue.Types.Actor (ActorId (ActorId), AnyActor)
 import qualified Hrogue.Types.Actor as Actor
 import           Hrogue.Types.HrogueState (HrogueState)
 import qualified Hrogue.Types.HrogueState as HrogueState
-import           Hrogue.Types.Internal (HrogueM, runHrogueM)
+import           Hrogue.Types.Internal (HrogueE, runHrogueM)
 
 playerId :: ActorId
 playerId = ActorId 0
